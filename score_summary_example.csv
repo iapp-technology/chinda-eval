@@ -1,0 +1,14 @@
+Benchmarks,Qwen_Qwen3-0.6B
+AIME24,0.0667
+AIME24-TH,0.0333
+Language Accuracy (Code Switching),0.938
+LiveCodeBench,0.2114
+LiveCodeBench-TH,0.0811
+MATH500,0.674
+MATH500-TH,0.504
+OpenThaiEval,0.45
+HellaSwag,0.4733
+HellaSwag-TH,0.3103
+IFEval (inst_level_loose_acc),0.6811
+IFEval-TH (inst_level_loose_acc),0.6275
+AVERAGE,0.4208916667
