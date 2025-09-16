@@ -36,7 +36,7 @@ AVAILABLE_SUBSETS = [
         dataset_id='iapp/openthaieval',
         subset_list=['all'],  # Using 'all' subset by default
         extra_params={'dataset_hub': 'huggingface', 'trust_remote_code': True},
-        metric_list=[{'accuracy': {}}],
+        metric_list=[{'acc': {}}],  # Use 'acc' instead of 'accuracy' since it's registered
         few_shot_num=0,
         train_split=None,
         eval_split='test',
@@ -146,9 +146,12 @@ class OpenThaiEvalAdapter(DefaultDataAdapter):
 คำถาม: {instruction}
 Choice: {choices}"""
 
+        # Clean up the target - remove trailing spaces
+        target = record.get('result', '').strip()
+
         return Sample(
             input=prompt,
-            target=record.get('result', ''),
+            target=target,
             metadata={
                 'question_id': record.get('question_id', ''),
                 'exam_type': record.get('exam_type', ''),
