@@ -1,0 +1,34 @@
+{
+    "name": "gpt-oss-20b@humaneval-th",
+    "dataset_name": "humaneval-th",
+    "dataset_pretty_name": "HumanEval-Thai",
+    "dataset_description": "HumanEval Thai is a benchmark for evaluating the ability of code generation models to write Python functions based on given specifications in Thai language.",
+    "model_name": "gpt-oss-20b",
+    "score": 0.9,
+    "metrics": [
+        {
+            "name": "pass@1",
+            "num": 10,
+            "score": 0.9,
+            "macro_score": 0.9,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.9,
+                    "macro_score": 0.9,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.9,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}
