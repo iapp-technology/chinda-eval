@@ -555,6 +555,14 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
         or e.code == 'content_filter'  # seems to happen on azure
     ):
         stop_reason = 'content_filter'
+    elif 'Expected 2 output messages' in content:
+        # Handle GPT-OSS model errors when it returns more than 2 messages
+        # Return a simplified error message instead of failing
+        return ModelOutput.from_content(
+            model=model_name,
+            content='Model output format error - unable to process response',
+            stop_reason='unknown'
+        )
 
     if stop_reason:
         return ModelOutput.from_content(model=model_name, content=content, stop_reason=stop_reason)
