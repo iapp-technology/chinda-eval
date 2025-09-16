@@ -1,9 +1,6 @@
-# 🇹🇭 Thai LLM Chinda Evaluation Framework
+# 🇹🇭 Chinda-Eval: Thai LLM Chinda Evaluation Framework
 
 <p align="center">
-    <br>
-    <img src="docs/en/_static/images/evalscope_logo.png" width="400"/>
-    <br>
     <h2 align="center">Comprehensive Evaluation Framework for Thai Language Models</h2>
 </p>
 
@@ -11,10 +8,6 @@
 <img src="https://img.shields.io/badge/python-%E2%89%A53.9-5be.svg">
 <img src="https://img.shields.io/badge/evalscope-v2.0-blue.svg">
 <a href="https://github.com/iapp-technology/chinda-eval"><img src="https://img.shields.io/badge/github-chinda--eval-green.svg"></a>
-</p>
-
-<p align="center">
-<a href="README.md">English</a> &nbsp | &nbsp <a href="README_THAI.md">ภาษาไทย</a>
 </p>
 
 > ⭐ **Chinda-Eval** is a specialized evaluation framework designed to assess Thai Language Models (LLMs) with comprehensive benchmarks and metrics. Built on top of EvalScope v2.0, it provides a robust infrastructure for evaluating Thai language understanding, generation, and reasoning capabilities.
