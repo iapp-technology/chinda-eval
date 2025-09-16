@@ -1,0 +1,103 @@
+{
+    "name": "gpt-oss-20b@ifeval",
+    "dataset_name": "ifeval",
+    "dataset_pretty_name": "IFEval",
+    "dataset_description": "IFEval is a benchmark for evaluating instruction-following language models, focusing on their ability to understand and respond to various prompts. It includes a diverse set of tasks and metrics to assess model performance comprehensively.",
+    "model_name": "gpt-oss-20b",
+    "score": 0.7,
+    "metrics": [
+        {
+            "name": "mean_prompt_level_strict",
+            "num": 10,
+            "score": 0.7,
+            "macro_score": 0.7,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.7,
+                    "macro_score": 0.7,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.7,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mean_inst_level_strict",
+            "num": 10,
+            "score": 0.7667,
+            "macro_score": 0.7667,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.7667,
+                    "macro_score": 0.7667,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.7667,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mean_prompt_level_loose",
+            "num": 10,
+            "score": 0.7,
+            "macro_score": 0.7,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.7,
+                    "macro_score": 0.7,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.7,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "mean_inst_level_loose",
+            "num": 10,
+            "score": 0.7667,
+            "macro_score": 0.7667,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.7667,
+                    "macro_score": 0.7667,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.7667,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}

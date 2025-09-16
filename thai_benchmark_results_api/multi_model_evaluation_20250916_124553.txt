@@ -1,0 +1,29 @@
+Multi-Model Evaluation Report
+=============================
+Date: Tue Sep 16 12:45:53 UTC 2025
+Total Duration: 1504s
+
+Models Evaluated (in order):
+  - gpt-oss-20b (/mnt/disk3/openai_gpt-oss-20b)
+  - gpt-oss-120b (/mnt/disk3/openai_gpt-oss-120b)
+  - qwen3-next-80b-instruct (/mnt/disk3/Qwen_Qwen3-Next-80B-A3B-Instruct)
+  - qwen3-next-80b-thinking (/mnt/disk3/Qwen_Qwen3-Next-80B-A3B-Thinking)
+
+Individual Model Summaries:
+
+=== gpt-oss-20b ===
+Benchmarks,gpt-oss-20b
+AIME24,0.5
+AIME24-TH,0.4
+Language Accuracy (Code Switching),1.0
+LiveCodeBench,0.7
+LiveCodeBench-TH,0.0
+MATH500,0.94
+MATH500-TH,0.5
+OpenThaiEval,0.0
+HellaSwag,0.6
+HellaSwag-TH,0.4
+IFEval (inst_level_loose_acc),0.7667
+IFEval-TH (inst_level_loose_acc),0.0
+AVERAGE,0.4838916666666666
+

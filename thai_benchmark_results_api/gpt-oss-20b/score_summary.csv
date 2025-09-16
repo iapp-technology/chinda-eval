@@ -1,0 +1,14 @@
+Benchmarks,gpt-oss-20b
+AIME24,0.5
+AIME24-TH,0.4
+Language Accuracy (Code Switching),1.0
+LiveCodeBench,0.7
+LiveCodeBench-TH,0.0
+MATH500,0.94
+MATH500-TH,0.5
+OpenThaiEval,0.0
+HellaSwag,0.6
+HellaSwag-TH,0.4
+IFEval (inst_level_loose_acc),0.7667
+IFEval-TH (inst_level_loose_acc),60.0
+AVERAGE,0.5339

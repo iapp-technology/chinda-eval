@@ -1,0 +1,34 @@
+{
+    "name": "gpt-oss-20b@aime24-th",
+    "dataset_name": "aime24-th",
+    "dataset_pretty_name": "AIME-2024-Thai",
+    "dataset_description": "The AIME 2024 Thai benchmark is a translation of the American Invitational Mathematics Examination problems. This benchmark tests a model's ability to solve challenging mathematics problems in Thai language by generating step-by-step solutions and providing the correct final answer.",
+    "model_name": "gpt-oss-20b",
+    "score": 0.4,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 10,
+            "score": 0.4,
+            "macro_score": 0.4,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 10,
+                    "score": 0.4,
+                    "macro_score": 0.4,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.4,
+                            "num": 10
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}
