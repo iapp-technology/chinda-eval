@@ -177,9 +177,13 @@ start_vllm_server() {
 
     # Check if this is a Qwen3-Next model that needs special configuration
     extra_args=""
+    extra_env=""
     if [[ "$model_key" == *"qwen3-next"* ]]; then
-        # Add MTP (Multi-Token Prediction) for better performance
-        extra_args='      - --speculative-config={"method":"qwen3_next_mtp","num_speculative_tokens":2}'
+        # Add MTP (Multi-Token Prediction) for better performance and disable chunked prefill
+        extra_args='      - --no-enable-chunked-prefill
+      - --tokenizer-mode=auto'
+        # Add environment variable to handle thinking blocks
+        extra_env='      - VLLM_ALLOW_THINKING=true'
     fi
 
     # Create temporary docker-compose file for this model
@@ -205,6 +209,7 @@ services:
       - NCCL_IGNORE_DISABLED_P2P=1
       - VLLM_ATTENTION_BACKEND=TRITON_ATTN_VLLM_V1
       - VLLM_USE_MODELSCOPE=true
+${extra_env}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://0.0.0.0:8000/v1/models" ]
       interval: 30s

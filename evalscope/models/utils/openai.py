@@ -563,6 +563,14 @@ def openai_handle_bad_request(model_name: str, e: APIStatusError) -> Union[Model
             content='Model output format error - unable to process response',
             stop_reason='unknown'
         )
+    elif 'qwen3' in model_name.lower() and ('think' in content.lower() or 'reasoning' in content.lower()):
+        # Handle Qwen3-Next models that may have thinking blocks
+        # Return a simplified response to avoid parsing errors
+        return ModelOutput.from_content(
+            model=model_name,
+            content='Model processing error - unable to parse response format',
+            stop_reason='unknown'
+        )
 
     if stop_reason:
         return ModelOutput.from_content(model=model_name, content=content, stop_reason=stop_reason)

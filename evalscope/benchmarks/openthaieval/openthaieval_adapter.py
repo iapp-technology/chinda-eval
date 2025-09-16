@@ -11,6 +11,7 @@ from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.registry import register_benchmark
+from evalscope.benchmarks.utils import strip_thinking_blocks
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -169,7 +170,8 @@ Choice: {choices}"""
         if not prediction:
             return ''
 
-        answer = prediction.strip()
+        # First strip any Qwen3 thinking blocks
+        answer = strip_thinking_blocks(prediction).strip()
 
         # Handle special cases for xnli2.0_th_200
         if answer == "entailment":

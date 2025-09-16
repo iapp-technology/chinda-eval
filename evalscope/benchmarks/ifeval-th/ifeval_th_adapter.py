@@ -5,6 +5,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score, AggScore
 from evalscope.api.registry import register_benchmark
+from evalscope.benchmarks.utils import strip_thinking_blocks
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -65,7 +66,8 @@ class IFEvalThAdapter(DefaultDataAdapter):
 
     def extract_answer(self, prediction: str, task_state: TaskState) -> str:
         """Extract the answer from the prediction."""
-        return prediction
+        # Strip Qwen3 thinking blocks before evaluation
+        return strip_thinking_blocks(prediction)
 
     def match_score(
         self, original_prediction: str, filtered_prediction: str, reference: List, task_state: TaskState

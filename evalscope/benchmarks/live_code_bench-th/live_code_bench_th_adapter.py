@@ -14,6 +14,7 @@ from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
 from evalscope.api.metric import Score
 from evalscope.api.registry import register_benchmark
+from evalscope.benchmarks.utils import strip_thinking_blocks, extract_code_block
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
@@ -116,20 +117,14 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
         if not prediction:
             return ''
 
-        # Try to extract Python code block
-        if '```python' in prediction:
-            code_start = prediction.find('```python') + 9
-            code_end = prediction.find('```', code_start)
-            if code_end != -1:
-                return prediction[code_start:code_end].strip()
-        elif '```' in prediction:
-            code_start = prediction.find('```') + 3
-            code_end = prediction.find('```', code_start)
-            if code_end != -1:
-                return prediction[code_start:code_end].strip()
+        # First strip any Qwen3 thinking blocks
+        prediction = strip_thinking_blocks(prediction)
 
-        # Return as is if no code block found
-        return prediction.strip()
+        # Use the utility function to extract code
+        code = extract_code_block(prediction, 'python')
+
+        # If no code block was found, return the cleaned prediction
+        return code.strip()
 
     def match_score(self, original_prediction: str, filtered_prediction: str, reference: str, task_state: TaskState) -> Score:
         """Evaluate the generated code against test cases."""

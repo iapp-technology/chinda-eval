@@ -3,8 +3,22 @@
 import re
 
 
+def strip_thinking_blocks(text: str) -> str:
+    """Strip Qwen3 thinking blocks from response text."""
+    if not text:
+        return text
+    # Remove <think>...</think> blocks
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    # Remove <thinking>...</thinking> blocks
+    text = re.sub(r'<thinking>.*?</thinking>', '', text, flags=re.DOTALL)
+    return text.strip()
+
+
 def extract_code_generation(model_output: str, model_type: str = 'chat'):
     # modified from
+    # First strip any Qwen3 thinking blocks
+    model_output = strip_thinking_blocks(model_output)
+
     outputlines = model_output.split('\n')
     # TODO: handle codellama
 

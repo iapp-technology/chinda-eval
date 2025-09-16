@@ -229,6 +229,9 @@ def strip_answer_string(string):
 
 
 def extract_answer(pred_str, use_last_number=True):
+    # Strip Qwen3 thinking blocks first
+    pred_str = re.sub(r'<think>.*?</think>', '', pred_str, flags=re.DOTALL)
+    pred_str = re.sub(r'<thinking>.*?</thinking>', '', pred_str, flags=re.DOTALL)
     pred_str = pred_str.replace('\u043a\u0438', '')
     if 'final answer is $' in pred_str and '$. I hope' in pred_str:
         # minerva_math

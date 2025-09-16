@@ -4,6 +4,17 @@ from typing import List, Optional, Union
 
 from evalscope.api.evaluator import Choices, Target, TaskState
 
+
+def strip_thinking_blocks(text: str) -> str:
+    """Strip Qwen3 thinking blocks from response text."""
+    if not text:
+        return text
+    # Remove <think>...</think> blocks
+    text = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL)
+    # Remove <thinking>...</thinking> blocks
+    text = re.sub(r'<thinking>.*?</thinking>', '', text, flags=re.DOTALL)
+    return text.strip()
+
 FEW_SHOT_TEMPLATE = r"""Here are some examples of how to answer similar questions:
 
 {fewshot}
@@ -140,12 +151,15 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     However, if the answer isn't in the expected format the model has
     failed in the task so we'll ultimately just mark it as incorrect
     """
+    # Strip thinking blocks first
+    completion = strip_thinking_blocks(state.output.completion)
+
     # First check whether the string strictly ends with the expected answer
     # In this case, we're looking for a single line which contains the expected
     # ANSWER: <answer> string with only whitespace or a period/full stop at the end.
     match = re.search(
         r'(?i)^ANSWER\s*:\s*([A-Za-z\d ,]+)\s*(?:$|\n|\.)',
-        state.output.completion,
+        completion,
         flags=re.MULTILINE,
     )
 
@@ -154,11 +168,11 @@ def parse_answers(state: TaskState, multiple_correct: bool = False) -> set[str]:
     if match is None:
         match = re.search(
             r'(?i)ANSWER\s*:\s*([A-Za-z\d ,]+)(?:[^\w]|\n|$|\.)',
-            state.output.completion,
+            completion,
         )
 
     if match is None:
-        fallback_answer = _fallback_parse_answer(state.output.completion)
+        fallback_answer = _fallback_parse_answer(completion)
         if fallback_answer:
             return fallback_answer
 
@@ -208,12 +222,15 @@ def parse_answers_zh(state: TaskState, multiple_correct: bool = False) -> set[st
     otherwise we can't extract what the model thinks is "true". We can be a
     bit flexible whether these are "AB" vs "A,B" vs "A B".
     """
+    # Strip thinking blocks first
+    completion = strip_thinking_blocks(state.output.completion)
+
     # Simple pattern to capture answers with optional bold markdown
     pattern = r'答案\s*[:：]\s*([A-Za-z0-9,，]+)'
-    match = re.search(pattern, state.output.completion, flags=re.MULTILINE)
+    match = re.search(pattern, completion, flags=re.MULTILINE)
 
     if match is None:
-        fallback_answer = _fallback_parse_answer(state.output.completion)
+        fallback_answer = _fallback_parse_answer(completion)
         if fallback_answer:
             return fallback_answer
 
