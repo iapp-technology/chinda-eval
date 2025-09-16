@@ -42,6 +42,10 @@ The framework includes the following Thai language benchmarks:
 | **HumanEval-TH** | Thai code generation benchmark | Programming |
 | **IFEval-TH** | Thai instruction following evaluation | Instruction Following |
 | **MATH-500-TH** | 500 Thai mathematics problems across difficulty levels | Mathematics |
+| **Code-Switching** | Thai-English code switching evaluation | Language Mixing |
+| **LiveCodeBench-TH** | Thai code generation with test execution | Programming |
+| **LiveCodeBench** | English code generation with test execution | Programming |
+| **OpenThaiEval** | Thai national exam questions (O-NET, TGAT, etc.) | General Knowledge |
 
 Each benchmark has been carefully translated and validated to ensure cultural and linguistic appropriateness for Thai language evaluation.
 
@@ -123,6 +127,10 @@ thai_benchmark_results_api/
 ├── humaneval-th/
 ├── ifeval-th/
 ├── math_500-th/
+├── code_switching/
+├── livecodebench-th/
+├── livecodebench/
+├── openthaieval/
 └── parallel_summary_*.txt
 ```
 
@@ -157,10 +165,10 @@ Specify benchmarks in the command line:
 --datasets aime24-th hellaswag-th
 
 # Run all Thai benchmarks
---datasets aime24-th hellaswag-th humaneval-th ifeval-th math_500-th
+--datasets aime24-th hellaswag-th humaneval-th ifeval-th math_500-th code_switching livecodebench-th openthaieval
 
 # Also run English versions for comparison
---datasets aime24 hellaswag humaneval ifeval math_500
+--datasets aime24 hellaswag humaneval ifeval math_500 livecodebench
 ```
 
 ## 📝 Documentation

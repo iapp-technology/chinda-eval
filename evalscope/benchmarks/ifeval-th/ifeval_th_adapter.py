@@ -3,8 +3,7 @@ from typing import Any, Dict, List
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
 from evalscope.api.dataset import Sample
 from evalscope.api.evaluator import TaskState
-from evalscope.api.messages import ChatMessageUser
-from evalscope.api.metric import Score
+from evalscope.api.metric import Score, AggScore
 from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
@@ -55,7 +54,7 @@ class IFEvalThAdapter(DefaultDataAdapter):
             prompt = self.prompt_template.format(question=prompt)
 
         return Sample(
-            input=[ChatMessageUser(content=prompt)],
+            input=prompt,  # Use string format instead of ChatMessage for better compatibility
             target=record.get('instruction_id_list', []),
             metadata={
                 'instruction_id_list': record.get('instruction_id_list', []),
@@ -83,8 +82,7 @@ class IFEvalThAdapter(DefaultDataAdapter):
         Returns:
             Score: The calculated score.
         """
-        from .instructions_registry import INSTRUCTION_DICT
-        from .utils import test_instruction_following_loose, test_instruction_following_strict
+        from .utils import InputExample, test_instruction_following_loose, test_instruction_following_strict
 
         score = Score(
             extracted_prediction=filtered_prediction,
@@ -94,41 +92,40 @@ class IFEvalThAdapter(DefaultDataAdapter):
         # Get instructions and kwargs from metadata
         instruction_id_list = task_state.metadata.get('instruction_id_list', [])
         kwargs_list = task_state.metadata.get('kwargs', [])
+        prompt = task_state.metadata.get('prompt', '')
+
+        # Create InputExample object
+        inp = InputExample(
+            key=0,  # Not used in evaluation
+            instruction_id_list=instruction_id_list,
+            prompt=prompt,
+            kwargs=kwargs_list
+        )
 
         # Evaluate strict and loose
-        strict_results = []
-        loose_results = []
+        try:
+            out_strict = test_instruction_following_strict(inp, filtered_prediction)
+            out_loose = test_instruction_following_loose(inp, filtered_prediction)
 
-        for instruction_id, kwargs in zip(instruction_id_list, kwargs_list):
-            instruction_cls = INSTRUCTION_DICT.get(instruction_id)
-            if instruction_cls:
-                # Create instruction with instruction_id (all Instructions take this parameter)
-                instruction = instruction_cls(instruction_id)
+            # Extract results
+            strict_results = out_strict.follow_instruction_list
+            loose_results = out_loose.follow_instruction_list
 
-                # Build the description with kwargs
-                # Remove None values to avoid errors
-                filtered_kwargs = {k: v for k, v in kwargs.items() if v is not None}
-                instruction.build_description(**filtered_kwargs)
+            # Calculate scores
+            inst_level_strict = sum(strict_results) / len(strict_results) if strict_results else 0
+            inst_level_loose = sum(loose_results) / len(loose_results) if loose_results else 0
+            prompt_level_strict = int(all(strict_results)) if strict_results else 0
+            prompt_level_loose = int(all(loose_results)) if loose_results else 0
 
-                # Test strict
-                strict_pass = test_instruction_following_strict(
-                    filtered_prediction,
-                    instruction
-                )
-                strict_results.append(strict_pass)
-
-                # Test loose
-                loose_pass = test_instruction_following_loose(
-                    filtered_prediction,
-                    instruction
-                )
-                loose_results.append(loose_pass)
-
-        # Calculate scores
-        inst_level_strict = sum(strict_results) / len(strict_results) if strict_results else 0
-        inst_level_loose = sum(loose_results) / len(loose_results) if loose_results else 0
-        prompt_level_strict = int(all(strict_results)) if strict_results else 0
-        prompt_level_loose = int(all(loose_results)) if loose_results else 0
+        except Exception as e:
+            logger.warning(f"Error in instruction following evaluation: {e}")
+            # Default scores on error
+            inst_level_strict = 0
+            inst_level_loose = 0
+            prompt_level_strict = 0
+            prompt_level_loose = 0
+            strict_results = []
+            loose_results = []
 
         score.value = {
             'inst_level_strict': inst_level_strict,
@@ -146,44 +143,58 @@ class IFEvalThAdapter(DefaultDataAdapter):
 
         return score
 
-    def aggregate_scores(self, sample_scores: List[Score]) -> List[Dict[str, Any]]:
+    def aggregate_scores(self, sample_scores: List[Score]) -> List[AggScore]:
         """
         Aggregate scores across all samples.
 
         Args:
-            sample_scores (List[Score]): List of scores for all samples.
+            sample_scores (List[Score]): List of scores from all samples.
 
         Returns:
-            List[Dict[str, Any]]: Aggregated scores.
+            List[AggScore]: Aggregated metrics.
         """
-        total_inst_level_strict = 0
-        total_inst_level_loose = 0
-        total_prompt_level_strict = 0
-        total_prompt_level_loose = 0
-        total_instructions = 0
-        total_prompts = len(sample_scores)
+        if not sample_scores:
+            return []
 
-        for score in sample_scores:
-            values = score.value
-            # Count instructions
-            if 'strict_results' in score.metadata:
-                total_instructions += len(score.metadata['strict_results'])
+        # Aggregate metrics
+        prompt_level_strict_sum = 0
+        prompt_level_loose_sum = 0
+        inst_level_strict_sum = 0
+        inst_level_loose_sum = 0
 
-            # Sum scores
-            total_inst_level_strict += values.get('inst_level_strict', 0) * len(score.metadata.get('strict_results', []))
-            total_inst_level_loose += values.get('inst_level_loose', 0) * len(score.metadata.get('loose_results', []))
-            total_prompt_level_strict += values.get('prompt_level_strict', 0)
-            total_prompt_level_loose += values.get('prompt_level_loose', 0)
+        for sample_score in sample_scores:
+            # SampleScore has a 'score' attribute which contains the Score object
+            if hasattr(sample_score, 'score') and sample_score.score and sample_score.score.value:
+                prompt_level_strict_sum += sample_score.score.value.get('prompt_level_strict', 0)
+                prompt_level_loose_sum += sample_score.score.value.get('prompt_level_loose', 0)
+                inst_level_strict_sum += sample_score.score.value.get('inst_level_strict', 0)
+                inst_level_loose_sum += sample_score.score.value.get('inst_level_loose', 0)
 
-        # Calculate averages
-        avg_inst_level_strict = total_inst_level_strict / total_instructions if total_instructions > 0 else 0
-        avg_inst_level_loose = total_inst_level_loose / total_instructions if total_instructions > 0 else 0
-        avg_prompt_level_strict = total_prompt_level_strict / total_prompts if total_prompts > 0 else 0
-        avg_prompt_level_loose = total_prompt_level_loose / total_prompts if total_prompts > 0 else 0
+        n = len(sample_scores)
 
         return [
-            {'name': 'inst_level_strict', 'value': avg_inst_level_strict},
-            {'name': 'inst_level_loose', 'value': avg_inst_level_loose},
-            {'name': 'prompt_level_strict', 'value': avg_prompt_level_strict},
-            {'name': 'prompt_level_loose', 'value': avg_prompt_level_loose},
+            AggScore(
+                score=prompt_level_strict_sum / n * 100 if n > 0 else 0,
+                metric_name='prompt_level_strict',
+                aggregation_name='mean',
+                category='default'
+            ),
+            AggScore(
+                score=prompt_level_loose_sum / n * 100 if n > 0 else 0,
+                metric_name='prompt_level_loose',
+                aggregation_name='mean',
+                category='default'
+            ),
+            AggScore(
+                score=inst_level_strict_sum / n * 100 if n > 0 else 0,
+                metric_name='inst_level_strict',
+                aggregation_name='mean',
+                category='default'
+            ),
+            AggScore(
+                score=inst_level_loose_sum / n * 100 if n > 0 else 0,
+                metric_name='inst_level_loose',
+                aggregation_name='mean',
+                category='default'
+            )
         ]
