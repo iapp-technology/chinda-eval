@@ -9,7 +9,7 @@ import os
 import traceback
 
 # Add the project root to Python path
-sys.path.insert(0, '/home/saiuser/kobkrit/openthaieval2')
+sys.path.insert(0, '/home/saiuser/kobkrit/chinda-eval')
 
 def verify_thai_benchmarks():
     """Verify that all Thai benchmarks are properly registered and loadable."""

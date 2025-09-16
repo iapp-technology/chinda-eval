@@ -126,7 +126,7 @@ The Docker container is configured with optimizations for batch processing:
 - Docker & Docker Compose
 - CUDA 12.0+
 - Python 3.10+
-- Conda environment: `openthaieval2`
+- Conda environment: `chinda-eval`
 
 ### Model
 - **Model**: GPT-OSS-20B (20 billion parameters)
@@ -136,7 +136,7 @@ The Docker container is configured with optimizations for batch processing:
 ## 📁 Project Structure
 
 ```
-openthaieval2/
+chinda-eval/
 ├── docker-compose.gptoss20b.yml   # vLLM server configuration
 ├── evalscope/
 │   └── benchmarks/                # Benchmark adapters
@@ -223,7 +223,7 @@ MAX_PARALLEL=3  # concurrent benchmarks
 #### Server Not Starting
 ```bash
 # Check Docker logs
-docker logs openthaieval2-vllm-server-gptoss-20b-1
+docker logs chinda-eval-vllm-server-gptoss-20b-1
 
 # Restart server
 docker compose -f docker-compose.gptoss20b.yml restart
@@ -297,7 +297,7 @@ The evaluation framework correctly extracts answers from the `text` field.
 
 ## 📚 Migration Notes
 
-This project was migrated from the original evalscope to openthaieval2:
+This project was migrated from the original evalscope to chinda-eval:
 1. Updated all benchmark adapters to new API (`BenchmarkMeta`, `DefaultDataAdapter`)
 2. Fixed dataset IDs and splits for Thai datasets
 3. Configured vLLM server with GPT-OSS specific optimizations
