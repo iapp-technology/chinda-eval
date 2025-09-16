@@ -67,21 +67,31 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
         public_tests = record.get('public_test_cases', [])
         private_tests = record.get('private_test_cases', [])
 
-        # Process test cases - ensure they're in the right format
-        def process_test_case(test_case):
-            if isinstance(test_case, dict):
-                return test_case
-            elif isinstance(test_case, str):
-                # Try to parse as JSON
-                try:
-                    return json.loads(test_case)
-                except:
-                    return {'input': test_case, 'output': ''}
-            else:
-                return {'input': str(test_case), 'output': ''}
+        # Parse test cases - they are stored as JSON strings
+        def parse_test_cases(test_cases_data):
+            if not test_cases_data:
+                return []
 
-        public_tests = [process_test_case(t) for t in public_tests] if public_tests else []
-        private_tests = [process_test_case(t) for t in private_tests] if private_tests else []
+            if isinstance(test_cases_data, str):
+                # Try to parse as JSON string
+                try:
+                    parsed = json.loads(test_cases_data)
+                    if isinstance(parsed, list):
+                        return parsed
+                    elif isinstance(parsed, dict):
+                        return [parsed]
+                    else:
+                        return []
+                except:
+                    # If it's base64 encoded or corrupted, skip for now
+                    return []
+            elif isinstance(test_cases_data, list):
+                return test_cases_data
+            else:
+                return []
+
+        public_tests = parse_test_cases(public_tests)
+        private_tests = parse_test_cases(private_tests)
 
         # Combine test cases for evaluation
         all_tests = public_tests + private_tests if private_tests else public_tests
@@ -142,6 +152,12 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
         total_tests = len(test_cases)
 
         for test_case in test_cases:
+            # Ensure test_case is a dictionary
+            if not isinstance(test_case, dict):
+                if self.debug:
+                    logger.warning(f"Invalid test case format: {type(test_case)}")
+                continue
+
             test_input = test_case.get('input', '')
             expected_output = test_case.get('output', '').strip()
 
