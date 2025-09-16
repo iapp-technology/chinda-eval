@@ -9,7 +9,7 @@ VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
 BASE_OUTPUT_DIR="thai_benchmark_results_api"
 CONDA_ENV="chinda-eval"
 MAX_PARALLEL=20  # Limit concurrent benchmarks
-MAX_SAMPLES=10 # Maximum samples per benchmark (covers all datasets)
+MAX_SAMPLES=1500 # Maximum samples per benchmark (covers all datasets)
 
 # Parse command line arguments
 MODEL_ORDER=()
@@ -127,7 +127,15 @@ print_model() {
 stop_vllm_server() {
     print_info "Stopping any existing vLLM servers..."
 
-    # Stop any docker compose services
+    # Stop any services from existing docker-compose files
+    for model_key in "${MODEL_ORDER[@]}"; do
+        local compose_file="/home/saiuser/kobkrit/chinda-eval/docker-compose.${model_key}.yml"
+        if [[ -f "$compose_file" ]]; then
+            docker compose -f "$compose_file" down --remove-orphans 2>/dev/null
+        fi
+    done
+
+    # Also check for any temp compose files (for backward compatibility)
     for compose_file in /tmp/docker-compose-*.yml; do
         if [[ -f "$compose_file" ]]; then
             docker compose -f "$compose_file" down --remove-orphans 2>/dev/null
@@ -175,63 +183,19 @@ start_vllm_server() {
         fi
     done
 
-    # Check if this is a Qwen3-Next model that needs special configuration
-    extra_args=""
-    extra_env=""
-    if [[ "$model_key" == *"qwen3-next"* ]]; then
-        # Add MTP (Multi-Token Prediction) for better performance and disable chunked prefill
-        extra_args='      - --no-enable-chunked-prefill
-      - --tokenizer-mode=auto'
-        # Add environment variable to handle thinking blocks
-        extra_env='      - VLLM_ALLOW_THINKING=true'
+    # Use the existing docker-compose file for this model
+    local compose_file="/home/saiuser/kobkrit/chinda-eval/docker-compose.${model_key}.yml"
+
+    if [[ ! -f "$compose_file" ]]; then
+        print_error "Docker compose file not found for $model_key: $compose_file"
+        print_error "Please ensure docker-compose.${model_key}.yml exists"
+        return 1
     fi
 
-    # Create temporary docker-compose file for this model
-    cat > /tmp/docker-compose-${model_key}.yml <<EOF
-version: '3.8'
+    print_info "Using docker-compose file: $compose_file"
 
-services:
-  vllm-server-${model_key}:
-    image: ${docker_image}
-    shm_size: 100g
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: [${device_ids}]
-              capabilities: [gpu]
-    volumes:
-      - ${model_path}:/models
-    ports:
-      - "${VLLM_PORT}:8000"
-    environment:
-      - NCCL_IGNORE_DISABLED_P2P=1
-      - VLLM_ATTENTION_BACKEND=TRITON_ATTN_VLLM_V1
-      - VLLM_USE_MODELSCOPE=true
-${extra_env}
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://0.0.0.0:8000/v1/models" ]
-      interval: 30s
-      timeout: 5s
-      retries: 20
-    command:
-      - --model=/models
-      - --tensor-parallel-size=${tensor_parallel}
-      - --served-model-name=${served_name}
-      - --trust-remote-code
-      - --max-model-len=${max_len}
-      - --dtype=auto
-      - --gpu-memory-utilization=${gpu_memory}
-      - --max-num-seqs=256
-      - --max-num-batched-tokens=32768
-      - --enable-chunked-prefill
-${extra_args}
-    restart: unless-stopped
-EOF
-
-    # Start the Docker container with orphan removal
-    docker compose -f /tmp/docker-compose-${model_key}.yml up -d --remove-orphans
+    # Start the Docker container using the existing compose file
+    docker compose -f "$compose_file" up -d --remove-orphans
 
     if [ $? -ne 0 ]; then
         print_error "Failed to start Docker container for $model_key"
@@ -254,7 +218,7 @@ EOF
     done
 
     print_error "Server failed to start within ${max_wait} seconds"
-    docker compose -f /tmp/docker-compose-${model_key}.yml logs
+    docker compose -f "$compose_file" logs
     return 1
 }
 
@@ -262,9 +226,12 @@ EOF
 stop_vllm_docker() {
     local model_key=$1
     print_info "Stopping vLLM server for $model_key..."
-    if [[ -f "/tmp/docker-compose-${model_key}.yml" ]]; then
-        docker compose -f /tmp/docker-compose-${model_key}.yml down --remove-orphans
-        rm -f /tmp/docker-compose-${model_key}.yml
+
+    # Use the existing docker-compose file for this model
+    local compose_file="/home/saiuser/kobkrit/chinda-eval/docker-compose.${model_key}.yml"
+
+    if [[ -f "$compose_file" ]]; then
+        docker compose -f "$compose_file" down --remove-orphans
     fi
 }
 
