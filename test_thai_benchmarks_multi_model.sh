@@ -9,7 +9,7 @@ VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
 BASE_OUTPUT_DIR="thai_benchmark_results_api"
 CONDA_ENV="chinda-eval"
 MAX_PARALLEL=20  # Limit concurrent benchmarks
-MAX_SAMPLES=10 # Maximum samples per benchmark (quick testing)
+MAX_SAMPLES=5 # Maximum samples per benchmark (quick testing)
 
 # Parse command line arguments
 MODEL_ORDER=()
@@ -54,45 +54,11 @@ if [ ${#MODEL_ORDER[@]} -eq 0 ]; then
     )
 fi
 
-# Model configurations
-declare -A MODELS
-declare -A MODEL_TENSOR_PARALLEL
-declare -A MODEL_SERVED_NAMES
-declare -A MODEL_GPU_MEMORY
-declare -A MODEL_MAX_LEN
-declare -A MODEL_DOCKER_IMAGE
-
-# Model 1: GPT-OSS-20B
-MODELS["gpt-oss-20b"]="/mnt/disk3/openai_gpt-oss-20b"
-MODEL_TENSOR_PARALLEL["gpt-oss-20b"]=8
-MODEL_SERVED_NAMES["gpt-oss-20b"]="gpt-oss-20b"
-MODEL_GPU_MEMORY["gpt-oss-20b"]=0.95
-MODEL_MAX_LEN["gpt-oss-20b"]=8192
-MODEL_DOCKER_IMAGE["gpt-oss-20b"]="vllm/vllm-openai:gptoss"
-
-# Model 2: GPT-OSS-120B
-MODELS["gpt-oss-120b"]="/mnt/disk3/openai_gpt-oss-120b"
-MODEL_TENSOR_PARALLEL["gpt-oss-120b"]=8
-MODEL_SERVED_NAMES["gpt-oss-120b"]="gpt-oss-120b"
-MODEL_GPU_MEMORY["gpt-oss-120b"]=0.95
-MODEL_MAX_LEN["gpt-oss-120b"]=8192
-MODEL_DOCKER_IMAGE["gpt-oss-120b"]="vllm/vllm-openai:gptoss"
-
-# Model 3: Qwen3-Next-80B-A3B-Instruct
-MODELS["qwen3-next-80b-instruct"]="/mnt/disk3/Qwen_Qwen3-Next-80B-A3B-Instruct"
-MODEL_TENSOR_PARALLEL["qwen3-next-80b-instruct"]=8
-MODEL_SERVED_NAMES["qwen3-next-80b-instruct"]="qwen3-next-80b-instruct"
-MODEL_GPU_MEMORY["qwen3-next-80b-instruct"]=0.95
-MODEL_MAX_LEN["qwen3-next-80b-instruct"]=8192
-MODEL_DOCKER_IMAGE["qwen3-next-80b-instruct"]="vllm/vllm-openai:nightly"
-
-# Model 4: Qwen3-Next-80B-A3B-Thinking
-MODELS["qwen3-next-80b-thinking"]="/mnt/disk3/Qwen_Qwen3-Next-80B-A3B-Thinking"
-MODEL_TENSOR_PARALLEL["qwen3-next-80b-thinking"]=8
-MODEL_SERVED_NAMES["qwen3-next-80b-thinking"]="qwen3-next-80b-thinking"
-MODEL_GPU_MEMORY["qwen3-next-80b-thinking"]=0.95
-MODEL_MAX_LEN["qwen3-next-80b-thinking"]=8192
-MODEL_DOCKER_IMAGE["qwen3-next-80b-thinking"]="vllm/vllm-openai:nightly"
+# Note: Model configurations are defined in individual docker-compose files:
+# - docker-compose.gpt-oss-20b.yml
+# - docker-compose.gpt-oss-120b.yml
+# - docker-compose.qwen3-next-80b-instruct.yml
+# - docker-compose.qwen3-next-80b-thinking.yml
 
 # Colors for output
 RED='\033[0;31m'
@@ -154,29 +120,8 @@ stop_vllm_server() {
 # Function to start vLLM server for a specific model
 start_vllm_server() {
     local model_key=$1
-    local model_path=${MODELS[$model_key]}
-    local tensor_parallel=${MODEL_TENSOR_PARALLEL[$model_key]}
-    local served_name=${MODEL_SERVED_NAMES[$model_key]}
-    local gpu_memory=${MODEL_GPU_MEMORY[$model_key]}
-    local max_len=${MODEL_MAX_LEN[$model_key]}
-    local docker_image=${MODEL_DOCKER_IMAGE[$model_key]}
 
     print_model "Starting vLLM server for $model_key"
-    print_info "Model path: $model_path"
-    print_info "Docker image: $docker_image"
-    print_info "Tensor parallel: $tensor_parallel"
-    print_info "Max length: $max_len"
-    print_info "GPU memory: $gpu_memory"
-
-    # Generate device IDs list based on tensor_parallel
-    device_ids=""
-    for ((i=0; i<tensor_parallel; i++)); do
-        if [ -n "$device_ids" ]; then
-            device_ids="${device_ids}, '${i}'"
-        else
-            device_ids="'${i}'"
-        fi
-    done
 
     # Use the existing docker-compose file for this model
     local compose_file="/home/saiuser/kobkrit/chinda-eval/docker-compose.${model_key}.yml"
@@ -199,11 +144,11 @@ start_vllm_server() {
 
     # Wait for server to be ready
     print_info "Waiting for vLLM server to be ready (this may take several minutes for large models)..."
-    local max_wait=300  # Increased to 5 minutes for larger models
+    local max_wait=600  # Increased to 10 minutes for larger models
     local waited=0
 
     while [ $waited -lt $max_wait ]; do
-        if curl -s http://localhost:${VLLM_PORT}/v1/models 2>/dev/null | grep -q "$served_name"; then
+        if curl -s http://localhost:${VLLM_PORT}/v1/models 2>/dev/null | grep -q "$model_key"; then
             print_message "✓ vLLM server for $model_key is ready!"
             return 0
         fi
@@ -480,17 +425,31 @@ for model_key in "${MODEL_ORDER[@]}"; do
     print_model "EVALUATING MODEL: $model_key"
     print_message "========================================="
 
+    # Create output directory for this model
+    MODEL_OUTPUT_DIR="$BASE_OUTPUT_DIR/$model_key"
+    mkdir -p "$MODEL_OUTPUT_DIR"
+
+    # Set up output log file for this model
+    OUTPUT_LOG="$MODEL_OUTPUT_DIR/output.log"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting evaluation for $model_key" > "$OUTPUT_LOG"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Max samples per benchmark: $MAX_SAMPLES" >> "$OUTPUT_LOG"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Benchmarks to run: ${BENCHMARKS[*]}" >> "$OUTPUT_LOG"
+
     # Stop any existing server
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Stopping any existing vLLM servers" >> "$OUTPUT_LOG"
     stop_vllm_server
 
     # Start vLLM server for this model
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting vLLM server for $model_key" >> "$OUTPUT_LOG"
     if ! start_vllm_server "$model_key"; then
         print_error "Failed to start server for $model_key, skipping..."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Failed to start server" >> "$OUTPUT_LOG"
         continue
     fi
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] vLLM server started successfully" >> "$OUTPUT_LOG"
 
-    # Get the served model name for API calls
-    MODEL_NAME=${MODEL_SERVED_NAMES[$model_key]}
+    # Use the model key as the model name (matches docker-compose configuration)
+    MODEL_NAME=$model_key
     export MODEL_NAME
 
     # Record model start time
@@ -511,7 +470,11 @@ for model_key in "${MODEL_ORDER[@]}"; do
 
         # Launch benchmark in background
         print_info "Launching $benchmark for $model_key..."
-        run_benchmark "$benchmark" "$MODEL_NAME" &
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] Launching $benchmark" >> "$OUTPUT_LOG"
+        {
+            run_benchmark "$benchmark" "$MODEL_NAME"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Completed $benchmark" >> "$OUTPUT_LOG"
+        } &
         PIDS+=($!)
 
         # Small delay to prevent race conditions
@@ -530,13 +493,19 @@ for model_key in "${MODEL_ORDER[@]}"; do
     # Generate score summary for this model
     generate_score_summary "$MODEL_NAME"
 
+    # Log completion
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Evaluation completed for $model_key" >> "$OUTPUT_LOG"
+
     # Record model end time
     model_end=$(date +%s)
     model_duration=$((model_end - model_start))
 
     print_message "Model $model_key completed in ${model_duration}s"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Total duration: ${model_duration}s" >> "$OUTPUT_LOG"
+    print_info "Output log saved to $OUTPUT_LOG"
 
     # Stop vLLM server for this model
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Stopping vLLM server for $model_key" >> "$OUTPUT_LOG"
     stop_vllm_docker "$model_key"
 
     # Wait before starting next model

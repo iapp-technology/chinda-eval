@@ -1,18 +1,18 @@
 version: '3.8'
 
 services:
-  vllm-server-gptoss-20b:
-    image: vllm/vllm-openai:gptoss # GPT-OSS specific vLLM image
+  vllm-server-qwen3-next-80b-thinking:
+    image: vllm/vllm-openai:nightly # Use nightly image for Qwen3-Next models
     shm_size: 100g
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0', '1', '2', '3']  # Use GPUs 0-3 for 20B model
+              device_ids: ['0', '1', '2', '3', '4', '5', '6', '7']  # Use all 8 GPUs for 80B model
               capabilities: [gpu]
     volumes:
-      - /mnt/disk3/openai_gpt-oss-20b:/models
+      - /mnt/disk3/Qwen_Qwen3-Next-80B-A3B-Thinking:/models
     ports:
       - "8801:8000"  # Map internal port 8000 to external 8801
     environment:
@@ -26,8 +26,8 @@ services:
       retries: 20
     command:
       - --model=/models
-      - --tensor-parallel-size=4
-      - --served-model-name=gpt-oss-20b
+      - --tensor-parallel-size=8
+      - --served-model-name=qwen3-next-80b-thinking
       - --trust-remote-code
       - --max-model-len=16384
       - --dtype=auto
@@ -35,4 +35,5 @@ services:
       - --max-num-seqs=256
       - --max-num-batched-tokens=32768
       - --enable-chunked-prefill
+      - --enforce-eager
     restart: unless-stopped

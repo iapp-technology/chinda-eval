@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Start vLLM server using Docker for GPT-OSS-20B
+# Start vLLM server using Docker for Qwen3-Next-80B-A3B-Instruct
 
-echo "Starting vLLM server for GPT-OSS-20B using Docker..."
-echo "Model: /mnt/disk3/openai_gpt-oss-20b"
+echo "Starting vLLM server for Qwen3-Next-80B-A3B-Instruct using Docker..."
+echo "Model: /mnt/disk3/Qwen_Qwen3-Next-80B-A3B-Instruct"
 echo "Port: 8801"
-echo "GPUs: 0,1,2,3"
+echo "GPUs: 0,1,2,3,4,5,6,7 (all 8 GPUs)"
 
 # Start the Docker container
-docker compose -f docker-compose.gptoss20b.yml up -d
+docker compose -f docker-compose.qwen3-next-80b-instruct.yml up -d
 
 # Check if Docker command was successful
 if [ $? -ne 0 ]; then
@@ -27,8 +27,8 @@ for i in {1..60}; do
         echo "✓ Server is ready!"
         echo ""
         echo "Server is running on http://localhost:8801"
-        echo "To view logs: docker compose -f docker-compose.gptoss20b.yml logs -f"
-        echo "To stop server: ./stop_vllm_docker.sh"
+        echo "To view logs: docker compose -f docker-compose.qwen3-next-80b-instruct.yml logs -f"
+        echo "To stop server: ./stop_qwen3_next_80b_instruct_vllm_docker.sh"
         exit 0
     fi
     echo -n "."
@@ -37,5 +37,5 @@ done
 
 echo ""
 echo "✗ Server failed to start within 120 seconds"
-echo "Check logs with: docker compose -f docker-compose.gptoss20b.yml logs"
+echo "Check logs with: docker compose -f docker-compose.qwen3-next-80b-instruct.yml logs"
 exit 1
