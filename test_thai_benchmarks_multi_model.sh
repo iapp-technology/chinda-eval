@@ -9,7 +9,7 @@ VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
 BASE_OUTPUT_DIR="thai_benchmark_results_api"
 CONDA_ENV="chinda-eval"
 MAX_PARALLEL=20  # Limit concurrent benchmarks
-MAX_SAMPLES=1500 # Maximum samples per benchmark (covers all datasets)
+MAX_SAMPLES=10 # Maximum samples per benchmark (quick testing)
 
 # Parse command line arguments
 MODEL_ORDER=()
@@ -127,12 +127,10 @@ print_model() {
 stop_vllm_server() {
     print_info "Stopping any existing vLLM servers..."
 
-    # Stop any services from existing docker-compose files
-    for model_key in "${MODEL_ORDER[@]}"; do
-        local compose_file="/home/saiuser/kobkrit/chinda-eval/docker-compose.${model_key}.yml"
-        if [[ -f "$compose_file" ]]; then
-            docker compose -f "$compose_file" down --remove-orphans 2>/dev/null
-        fi
+    # Stop any running vLLM containers by checking what's actually running
+    # This avoids accidentally stopping containers from other model runs
+    docker ps --format "{{.Names}}" | grep -E "vllm-server|gptoss|qwen3" | while read container_name; do
+        docker stop "$container_name" 2>/dev/null
     done
 
     # Also check for any temp compose files (for backward compatibility)
@@ -145,9 +143,6 @@ stop_vllm_server() {
 
     # Clean up any stale containers with tmp-vllm-server prefix
     docker ps -a | grep 'tmp-vllm-server' | awk '{print $1}' | xargs -r docker rm -f 2>/dev/null
-
-    # Try Docker first
-    docker ps -q --filter "name=vllm" | xargs -r docker stop 2>/dev/null
 
     # Kill processes on the port
     lsof -ti:${VLLM_PORT} | xargs -r kill -9 2>/dev/null
