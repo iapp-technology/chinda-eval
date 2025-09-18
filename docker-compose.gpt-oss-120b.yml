@@ -29,7 +29,7 @@ services:
       - --tensor-parallel-size=8
       - --served-model-name=gpt-oss-120b
       - --trust-remote-code
-      - --max-model-len=8192
+      - --max-model-len=32768
       - --dtype=auto
       - --gpu-memory-utilization=0.95
       - --max-num-seqs=256

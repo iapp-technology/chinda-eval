@@ -1,0 +1,70 @@
+analysis_report: false
+api_url: http://localhost:8801/v1/chat/completions
+chat_template: null
+dataset_args:
+  aime24-th:
+    aggregation: mean
+    dataset_id: iapp/aime_2024-th
+    default_subset: default
+    description: The AIME 2024 Thai benchmark is a translation of the American Invitational
+      Mathematics Examination problems. This benchmark tests a model's ability to
+      solve challenging mathematics problems in Thai language by generating step-by-step
+      solutions and providing the correct final answer.
+    eval_split: train
+    extra_params:
+      dataset_hub: huggingface
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    metric_list:
+    - acc:
+        numeric: true
+    name: aime24-th
+    output_types:
+    - generation
+    pretty_name: AIME-2024-Thai
+    prompt_template: '{question}
+
+      กรุณาแสดงวิธีคิดแบบขั้นตอนอย่างละเอียด และใส่คำตอบสุดท้ายให้ชัดเจนใน \boxed{{}}'
+    query_template: null
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - default
+    system_prompt: null
+    tags:
+    - Math
+    - Reasoning
+    train_split: null
+dataset_dir: /home/saiuser/.cache/modelscope/hub/datasets
+dataset_hub: huggingface
+datasets:
+- aime24-th
+debug: false
+eval_backend: Native
+eval_batch_size: 1
+eval_config: null
+eval_type: openai_api
+generation_config:
+  batch_size: 1
+  do_sample: false
+  max_new_tokens: 16384
+  temperature: 0.0
+  timeout: 300.0
+ignore_errors: false
+judge_model_args: {}
+judge_strategy: auto
+judge_worker_num: 1
+limit: 1500
+model: qwen3-next-80b-thinking
+model_args: {}
+model_id: qwen3-next-80b-thinking
+model_task: text_generation
+repeats: 1
+rerun_review: false
+seed: 42
+stream: null
+timeout: 300.0
+use_cache: null
+work_dir: thai_benchmark_results_api/qwen3-next-80b-thinking/aime24-th/20250918_074442

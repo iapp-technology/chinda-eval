@@ -1,0 +1,14 @@
+Benchmarks,qwen3-next-80b-instruct
+AIME24,N/A
+AIME24-TH,N/A
+Language Accuracy (Code Switching),N/A
+LiveCodeBench,N/A
+LiveCodeBench-TH,N/A
+MATH500,N/A
+MATH500-TH,N/A
+OpenThaiEval,N/A
+HellaSwag,N/A
+HellaSwag-TH,N/A
+IFEval (inst_level_loose_acc),N/A
+IFEval-TH (inst_level_loose_acc),N/A
+AVERAGE,N/A

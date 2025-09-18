@@ -15,6 +15,10 @@
 #   You can adjust per-benchmark limits in BENCHMARK_LIMITS array below.
 #   This is useful for reducing runtime on slow benchmarks like code_switching
 #   and live_code_bench which can take 5+ hours with 1500 samples.
+#
+# Known Issues:
+#   - gpt-oss-120b: Has problems with IFEval benchmark when generating JSON/structured
+#     output, causing 500 Internal Server Errors. Limited to 10 samples as workaround.
 
 # Configuration
 VLLM_PORT=8801
@@ -32,6 +36,8 @@ BENCHMARK_LIMITS["live_code_bench"]=200      # Reduced from 1500 to speed up (wa
 BENCHMARK_LIMITS["live_code_bench-th"]=200   # Reduced for consistency with English version
 BENCHMARK_LIMITS["math_500"]=500             # Math problems can be slow
 BENCHMARK_LIMITS["math_500-th"]=500          # Math problems can be slow
+BENCHMARK_LIMITS["ifeval"]=500               # Set to 500 for proper testing
+BENCHMARK_LIMITS["ifeval-th"]=500            # Set to 500 for proper testing
 # Add more benchmark-specific limits as needed
 # BENCHMARK_LIMITS["aime24"]=1500
 # BENCHMARK_LIMITS["aime24-th"]=1500
@@ -89,7 +95,7 @@ done
 # Default models if none specified
 if [ ${#MODEL_ORDER[@]} -eq 0 ]; then
     MODEL_ORDER=(
-        "gpt-oss-20b"
+        # "gpt-oss-20b"
         "gpt-oss-120b"
         "qwen3-next-80b-instruct"
         "qwen3-next-80b-thinking"
@@ -269,7 +275,7 @@ run_benchmark() {
         --datasets $benchmark \
         --dataset-hub huggingface \
         --work-dir "$bench_output_dir" \
-        --generation-config '{"do_sample": false, "temperature": 0.0, "max_new_tokens": 16384}' \
+        --generation-config '{"do_sample": false, "temperature": 0.0, "max_new_tokens": 32768}' \
         --timeout 300 \
         --limit $sample_limit > "$bench_output_dir/output.log" 2>&1
 

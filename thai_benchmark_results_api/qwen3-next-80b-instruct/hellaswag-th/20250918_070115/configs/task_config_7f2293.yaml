@@ -1,0 +1,75 @@
+analysis_report: false
+api_url: http://localhost:8801/v1/chat/completions
+chat_template: null
+dataset_args:
+  hellaswag-th:
+    aggregation: mean
+    dataset_id: Patt/HellaSwag_TH_cleanned
+    default_subset: default
+    description: HellaSwag Thai is a benchmark for commonsense reasoning in Thai language.
+      It consists of multiple-choice questions where the model must select the most
+      plausible continuation of a given context.
+    eval_split: validation
+    extra_params:
+      dataset_hub: huggingface
+    few_shot_num: 0
+    few_shot_prompt_template: null
+    few_shot_random: false
+    filters: null
+    metric_list:
+    - acc
+    name: hellaswag-th
+    output_types:
+    - generation
+    pretty_name: HellaSwag-Thai
+    prompt_template: 'Answer the following multiple choice question. The entire content
+      of your response should be of the following format: ''ANSWER: $LETTER'' (without
+      quotes) where LETTER is one of {letters}.
+
+
+      {question}
+
+
+      {choices}'
+    query_template: null
+    shuffle: false
+    shuffle_choices: false
+    subset_list:
+    - default
+    system_prompt: null
+    tags:
+    - Commonsense
+    - MCQ
+    - Knowledge
+    train_split: train
+dataset_dir: /home/saiuser/.cache/modelscope/hub/datasets
+dataset_hub: huggingface
+datasets:
+- hellaswag-th
+debug: false
+eval_backend: Native
+eval_batch_size: 1
+eval_config: null
+eval_type: openai_api
+generation_config:
+  batch_size: 1
+  do_sample: false
+  max_new_tokens: 16384
+  temperature: 0.0
+  timeout: 300.0
+ignore_errors: false
+judge_model_args: {}
+judge_strategy: auto
+judge_worker_num: 1
+limit: 1500
+model: qwen3-next-80b-instruct
+model_args: {}
+model_id: qwen3-next-80b-instruct
+model_task: text_generation
+repeats: 1
+rerun_review: false
+seed: 42
+stream: null
+timeout: 300.0
+use_cache: null
+work_dir: thai_benchmark_results_api/qwen3-next-80b-instruct/hellaswag-th/20250918_070115

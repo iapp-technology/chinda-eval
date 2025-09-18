@@ -18,6 +18,7 @@ from .utils.openai import (
     openai_completion_params,
     openai_handle_bad_request,
 )
+from .openai_compatible_wrapper import wrap_openai_client
 
 logger = get_logger()
 
@@ -57,6 +58,9 @@ class OpenAICompatibleAPI(ModelAPI):
             base_url=self.base_url,
             **model_args,
         )
+
+        # Wrap the client with error handling for problematic models
+        self.client = wrap_openai_client(self.client)
 
     def generate(
         self,

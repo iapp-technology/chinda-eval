@@ -29,9 +29,9 @@ services:
       - --tensor-parallel-size=8
       - --served-model-name=gpt-oss-20b
       - --trust-remote-code
-      - --max-model-len=16384
+      - --max-model-len=32768
       - --dtype=auto
-      - --gpu-memory-utilization=0.9
+      - --gpu-memory-utilization=0.95
       - --max-num-seqs=256
       - --max-num-batched-tokens=32768
       - --enable-chunked-prefill

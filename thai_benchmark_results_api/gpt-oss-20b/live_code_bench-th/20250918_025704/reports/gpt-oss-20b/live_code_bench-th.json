@@ -1,0 +1,34 @@
+{
+    "name": "gpt-oss-20b@live_code_bench-th",
+    "dataset_name": "live_code_bench-th",
+    "dataset_pretty_name": "Live-Code-Bench-Thai",
+    "dataset_description": "Thai version of LiveCodeBench for code generation. Tests the model's ability to generate correct Python code from Thai problem descriptions.",
+    "model_name": "gpt-oss-20b",
+    "score": 0.3859,
+    "metrics": [
+        {
+            "name": "mean_Pass@1",
+            "num": 111,
+            "score": 0.3859,
+            "macro_score": 0.3859,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 111,
+                    "score": 0.3859,
+                    "macro_score": 0.3859,
+                    "subsets": [
+                        {
+                            "name": "default",
+                            "score": 0.3859,
+                            "num": 111
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}
