@@ -147,8 +147,17 @@ class OpenThaiEvalAdapter(DefaultDataAdapter):
 คำถาม: {instruction}
 Choice: {choices}"""
 
-        # Clean up the target - remove trailing spaces
+        # Clean up and normalize the target
         target = record.get('result', '').strip()
+
+        # Remove common suffixes that appear in some dataset entries
+        if 'คือคำตอบที่ถูกต้อง' in target:
+            target = target.replace('คือคำตอบที่ถูกต้อง', '').strip()
+
+        # Extract just the answer pattern (1)-(9) or (a)-(z)
+        answer_match = re.search(r'\([1-9a-zA-Zก-ฮ]\)', target)
+        if answer_match:
+            target = answer_match.group()
 
         return Sample(
             input=prompt,

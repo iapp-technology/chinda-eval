@@ -9,7 +9,19 @@ VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
 BASE_OUTPUT_DIR="thai_benchmark_results_api"
 CONDA_ENV="chinda-eval"
 MAX_PARALLEL=20  # Limit concurrent benchmarks
-MAX_SAMPLES=5 # Maximum samples per benchmark (quick testing)
+MAX_SAMPLES=1500 # Maximum samples per benchmark (quick testing)
+
+# Ensure the output directory exists
+if [ ! -d "$BASE_OUTPUT_DIR" ]; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Creating output directory: $BASE_OUTPUT_DIR"
+    mkdir -p "$BASE_OUTPUT_DIR"
+    if [ $? -eq 0 ]; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ✓ Output directory created successfully"
+    else
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] ERROR: Failed to create output directory"
+        exit 1
+    fi
+fi
 
 # Parse command line arguments
 MODEL_ORDER=()
