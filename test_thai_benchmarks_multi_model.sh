@@ -2,6 +2,19 @@
 
 # Multi-Model Parallel Benchmarks Evaluation Script
 # Automatically manages vLLM servers and evaluates multiple models in sequence
+#
+# Usage:
+#   ./test_thai_benchmarks_multi_model.sh [OPTIONS]
+#
+# Options:
+#   --models MODEL1 MODEL2 ...    Specify models to evaluate (default: all 4 models)
+#   --benchmarks BENCH1 BENCH2... Specify benchmarks to run (default: all 12 benchmarks)
+#   --limit N                      Override default sample limit (default: 1500)
+#
+# Benchmark Sample Limits:
+#   You can adjust per-benchmark limits in BENCHMARK_LIMITS array below.
+#   This is useful for reducing runtime on slow benchmarks like code_switching
+#   and live_code_bench which can take 5+ hours with 1500 samples.
 
 # Configuration
 VLLM_PORT=8801
@@ -9,7 +22,24 @@ VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
 BASE_OUTPUT_DIR="thai_benchmark_results_api"
 CONDA_ENV="chinda-eval"
 MAX_PARALLEL=20  # Limit concurrent benchmarks
-MAX_SAMPLES=1500 # Maximum samples per benchmark (quick testing)
+DEFAULT_MAX_SAMPLES=1500 # Default maximum samples per benchmark
+
+# Per-benchmark sample limits (override DEFAULT_MAX_SAMPLES)
+# Adjust these values based on your needs and time constraints
+declare -A BENCHMARK_LIMITS
+BENCHMARK_LIMITS["code_switching"]=500       # Reduced from 1500 to speed up (was taking 5+ hours)
+BENCHMARK_LIMITS["live_code_bench"]=200      # Reduced from 1500 to speed up (was taking 5+ hours)
+BENCHMARK_LIMITS["live_code_bench-th"]=200   # Reduced for consistency with English version
+BENCHMARK_LIMITS["math_500"]=500             # Math problems can be slow
+BENCHMARK_LIMITS["math_500-th"]=500          # Math problems can be slow
+# Add more benchmark-specific limits as needed
+# BENCHMARK_LIMITS["aime24"]=1500
+# BENCHMARK_LIMITS["aime24-th"]=1500
+# BENCHMARK_LIMITS["hellaswag"]=1500
+# BENCHMARK_LIMITS["hellaswag-th"]=1500
+# BENCHMARK_LIMITS["ifeval"]=1500
+# BENCHMARK_LIMITS["ifeval-th"]=1500
+# BENCHMARK_LIMITS["openthaieval"]=1500
 
 # Ensure the output directory exists
 if [ ! -d "$BASE_OUTPUT_DIR" ]; then
@@ -43,7 +73,7 @@ while [[ $# -gt 0 ]]; do
             done
             ;;
         --limit)
-            MAX_SAMPLES="$2"
+            DEFAULT_MAX_SAMPLES="$2"
             shift 2
             ;;
         *)
@@ -225,7 +255,10 @@ run_benchmark() {
 
     local start_time=$(date +%s)
 
-    print_info "[BENCHMARK: $benchmark] Starting for model: $model_name..."
+    # Get the sample limit for this benchmark
+    local sample_limit="${BENCHMARK_LIMITS[$benchmark]:-$DEFAULT_MAX_SAMPLES}"
+
+    print_info "[BENCHMARK: $benchmark] Starting for model: $model_name (limit: $sample_limit samples)..."
 
     # Run evalscope command
     evalscope eval \
@@ -238,7 +271,7 @@ run_benchmark() {
         --work-dir "$bench_output_dir" \
         --generation-config '{"do_sample": false, "temperature": 0.0, "max_new_tokens": 16384}' \
         --timeout 300 \
-        --limit $MAX_SAMPLES > "$bench_output_dir/output.log" 2>&1
+        --limit $sample_limit > "$bench_output_dir/output.log" 2>&1
 
     local exit_code=$?
     local end_time=$(date +%s)
@@ -403,9 +436,10 @@ else:
     cat "$output_dir/score_summary.csv" | column -t -s ','
 }
 
-# Export functions for parallel execution
+# Export functions and variables for parallel execution
 export -f run_benchmark print_message print_error print_warning print_info
-export VLLM_SERVER_URL MAX_SAMPLES BASE_OUTPUT_DIR
+export VLLM_SERVER_URL DEFAULT_MAX_SAMPLES BASE_OUTPUT_DIR
+export -A BENCHMARK_LIMITS  # Export the associative array
 
 # Main execution
 print_message "========================================="
@@ -414,7 +448,16 @@ print_message "========================================="
 print_message "Models to evaluate (in order): ${MODEL_ORDER[@]}"
 print_message "Benchmarks: ${#BENCHMARKS[@]} total"
 print_message "Max parallel jobs: $MAX_PARALLEL"
-print_message "Max samples per benchmark: $MAX_SAMPLES"
+print_message "Default max samples: $DEFAULT_MAX_SAMPLES"
+
+# Show benchmark-specific limits if any
+if [ ${#BENCHMARK_LIMITS[@]} -gt 0 ]; then
+    print_message "Benchmark-specific limits:"
+    for bench in "${!BENCHMARK_LIMITS[@]}"; do
+        print_info "  - $bench: ${BENCHMARK_LIMITS[$bench]} samples"
+    done
+fi
+
 print_message "========================================="
 
 # Activate conda environment
@@ -444,8 +487,15 @@ for model_key in "${MODEL_ORDER[@]}"; do
     # Set up output log file for this model
     OUTPUT_LOG="$MODEL_OUTPUT_DIR/output.log"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting evaluation for $model_key" > "$OUTPUT_LOG"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Max samples per benchmark: $MAX_SAMPLES" >> "$OUTPUT_LOG"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Default max samples: $DEFAULT_MAX_SAMPLES" >> "$OUTPUT_LOG"
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Benchmarks to run: ${BENCHMARKS[*]}" >> "$OUTPUT_LOG"
+
+    # Log benchmark-specific limits
+    for bench in "${BENCHMARKS[@]}"; do
+        if [ -n "${BENCHMARK_LIMITS[$bench]}" ]; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')]   - $bench: ${BENCHMARK_LIMITS[$bench]} samples (custom limit)" >> "$OUTPUT_LOG"
+        fi
+    done
 
     # Stop any existing server
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] Stopping any existing vLLM servers" >> "$OUTPUT_LOG"
