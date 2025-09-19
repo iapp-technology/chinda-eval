@@ -4,6 +4,7 @@ Thai-English code switching evaluation using WangchanThaiInstruct dataset
 """
 
 import re
+import unicodedata
 from typing import Any, Dict
 
 from evalscope.api.benchmark import BenchmarkMeta, DefaultDataAdapter
@@ -72,11 +73,14 @@ def is_mainly_thai(response: str) -> bool:
     for i in range(0x0180, 0x024F + 1):  # Latin Extended-B
         allowed_symbols.add(chr(i))
 
-    # Quotes and punctuation
+    # Quotes and punctuation (including non-breaking hyphen U+2011)
     for i in range(0x2000, 0x206F + 1):  # General Punctuation
         allowed_symbols.add(chr(i))
 
-    # Emoji ranges
+    # Special hyphens and dashes
+    allowed_symbols.update(['\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2015'])  # Various hyphens/dashes
+
+    # Emoji and symbol ranges - comprehensive coverage
     emoji_ranges = [
         (0x1F300, 0x1F5FF),  # Miscellaneous Symbols and Pictographs
         (0x1F600, 0x1F64F),  # Emoticons
@@ -90,6 +94,12 @@ def is_mainly_thai(response: str) -> bool:
         (0x2600, 0x26FF),    # Miscellaneous Symbols
         (0x2700, 0x27BF),    # Dingbats
         (0x1F1E6, 0x1F1FF),  # Regional Indicator Symbols (for flags)
+        (0x2300, 0x23FF),    # Miscellaneous Technical
+        (0x2460, 0x24FF),    # Enclosed Alphanumerics
+        (0x25A0, 0x25FF),    # Geometric Shapes
+        (0x2B00, 0x2BFF),    # Miscellaneous Symbols and Arrows
+        (0xFE00, 0xFE0F),    # Variation Selectors
+        (0xE0100, 0xE01EF),  # Variation Selectors Supplement
     ]
 
     for start, end in emoji_ranges:
@@ -99,26 +109,31 @@ def is_mainly_thai(response: str) -> bool:
             except ValueError:
                 pass  # Skip if the code point is not valid
 
+    # Zero-width characters and control characters
+    allowed_symbols.update(['\u200b', '\u200c', '\u200d', '\ufeff'])  # Zero-width space, non-joiner, joiner, BOM
+
     # Trademark and registered symbols
-    allowed_symbols.update(['©', '™', '®'])
+    allowed_symbols.update(['©', '™', '®', '℗', '℠'])
 
     # Currency symbols
-    allowed_symbols.update(['€', '£', '¥', '₹', '₩', '₺', '₴', '₦', '₱', '₲', '₵', '₸'])
+    allowed_symbols.update(['€', '£', '¥', '₹', '₩', '₺', '₴', '₦', '₱', '₲', '₵', '₸', '¢', '₽', '₨', '₪', '₫', '₮', '₯', '₰', '₳', '₵', '₹', '₺', '₼', '₽', '₾', '₿'])
 
-    # Superscripts
+    # Superscripts and subscripts
     allowed_symbols.update(['²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹', '⁰', '⁻', '⁺', '⁼', '⁽', '⁾', 'ⁿ', 'ⁱ'])
+    allowed_symbols.update(['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉', '₊', '₋', '₌', '₍', '₎'])
 
-    # Arrows
-    allowed_symbols.update(['→', '←', '↑', '↓', '↔', '↕', '↖', '↗', '↘', '↙', '↩', '↪', '↻', '↼', '↽', '↾', '↿',
-                           '⇀', '⇁', '⇂', '⇃', '⇄', '⇅', '⇆', '⇇', '⇈', '⇉', '⇊', '⇋', '⇌', '⇍', '⇎', '⇏',
-                           '⇐', '⇑', '⇒', '⇓', '⇔', '⇕', '⇖', '⇗', '⇘', '⇙', '⇚', '⇛', '⇜', '⇝', '⇞', '⇟',
-                           '⇠', '⇡', '⇢', '⇣', '⇤', '⇥', '⇦', '⇧', '⇨', '⇩', '⇪', '⇫', '⇬', '⇭', '⇮', '⇯',
-                           '⇰', '⇱', '⇲', '⇳', '⇴', '⇵', '⇶', '⇷', '⇸', '⇹', '⇺', '⇻', '⇼', '⇽', '⇾', '⇿',
-                           '⟀', '⟁'])
+    # Arrows (comprehensive)
+    for i in range(0x2190, 0x21FF + 1):  # All arrow symbols
+        allowed_symbols.add(chr(i))
+    for i in range(0x2900, 0x297F + 1):  # Supplemental Arrows-B
+        allowed_symbols.add(chr(i))
+    for i in range(0x2B00, 0x2B7F + 1):  # Additional arrows
+        allowed_symbols.add(chr(i))
 
     # Math symbols
     allowed_symbols.update(['∈', '∉', '∊', '∋', '∌', '∀', '∁', '∂', '∃', '∄', '∅', '∆', '∇',
-                           '½', '⅓', '⅔', '¼', '¾', '⅛', '⅜', '⅝', '⅞', '⅑', '⅒', '⅕'])
+                           '½', '⅓', '⅔', '¼', '¾', '⅛', '⅜', '⅝', '⅞', '⅑', '⅒', '⅕', '≈', '≠', '≤', '≥',
+                           '±', '×', '÷', '∞', '√', '∑', '∏', '∫', '≡'])
 
     # Initialize counters
     thai_count = 0
@@ -148,6 +163,19 @@ def is_mainly_thai(response: str) -> bool:
         if is_english:
             english_count += 1
             continue
+
+        # Check Unicode categories for other acceptable characters
+        try:
+            category = unicodedata.category(char)
+            # Allow various punctuation, symbols, marks, and separators
+            if category.startswith(('P', 'S', 'M', 'Z', 'C')):
+                # P = Punctuation, S = Symbol, M = Mark, Z = Separator, C = Control
+                continue
+            # Allow emoji and pictographic characters
+            if ord(char) > 0x10000:  # Characters outside BMP are often emoji
+                continue
+        except (ValueError, TypeError):
+            pass
 
         # If not Thai, digit, allowed symbol, or English, it's another language
         other_chars.add(char)

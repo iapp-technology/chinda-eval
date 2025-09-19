@@ -31,7 +31,37 @@ def extract_code_generation(model_output: str, model_type: str = 'chat'):
 
     if len(indexlines) < 2:
         return ''
-    return '\n'.join(outputlines[indexlines[0] + 1:indexlines[1]])
+
+    # Extract ALL code blocks and return the longest one
+    # This handles cases where models generate multiple code blocks
+    # (e.g., pseudocode followed by implementation)
+    all_code_blocks = []
+    i = 0
+    while i < len(indexlines) - 1:
+        # Look for pairs of ``` that form a code block
+        start = indexlines[i]
+        # Find the next ``` after this one
+        end = indexlines[i + 1]
+
+        # Check if this looks like a code block start
+        # (either ```python, ```Python, or just ```)
+        start_line = outputlines[start].lower()
+        if '```' in outputlines[start]:
+            code_block = '\n'.join(outputlines[start + 1:end])
+            # Only add non-empty code blocks
+            if code_block.strip():
+                all_code_blocks.append(code_block)
+            i += 2  # Move past this pair
+        else:
+            i += 1
+
+    if not all_code_blocks:
+        # Fallback to original behavior if no valid blocks found
+        return '\n'.join(outputlines[indexlines[0] + 1:indexlines[1]])
+
+    # Return the longest code block
+    # This is likely to be the actual implementation rather than pseudocode
+    return max(all_code_blocks, key=len)
 
 
 def extract_code_execution(model_output: str, cot: bool = False):

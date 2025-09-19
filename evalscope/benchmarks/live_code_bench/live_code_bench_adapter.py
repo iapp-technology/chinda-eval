@@ -25,7 +25,7 @@ logger = get_logger()
         metric_list=['Pass@1'],
         eval_split='test',
         prompt_template=
-        '### Question:\n{question_content}\n\n{format_prompt} ### Answer: (use the provided format with backticks)\n\n',
+        '### Question:\n{question_content}\n\n{format_prompt} ### Answer: (provide ONLY ONE code block with your complete solution, no explanations)\n\n',
         extra_params={
             'start_date': None,
             'end_date': None,

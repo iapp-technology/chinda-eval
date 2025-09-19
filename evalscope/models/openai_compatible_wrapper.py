@@ -6,7 +6,7 @@ This wrapper helps handle 500 errors and other issues gracefully.
 import time
 import logging
 from typing import Dict, Any, Optional
-from openai import InternalServerError
+from openai import InternalServerError, APIConnectionError, APITimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +16,8 @@ class RobustOpenAIClient:
 
     def __init__(self, base_client):
         self.client = base_client
-        self.max_retries = 3
-        self.retry_delay = 2
+        self.max_retries = 5  # Increased for connection issues
+        self.retry_delay = 5   # Increased delay for connection recovery
 
     def chat_completions_create(self, **kwargs) -> Any:
         """
@@ -33,42 +33,72 @@ class RobustOpenAIClient:
                 # Try the original request using the stored original method
                 return self.client.chat.completions._original_create(**kwargs)
 
-            except InternalServerError as e:
+            except (InternalServerError, APIConnectionError, APITimeoutError) as e:
                 last_error = e
                 error_msg = str(e)
+                error_type = type(e).__name__
 
-                logger.warning(f"Attempt {attempt + 1}: InternalServerError - {error_msg}")
+                logger.warning(f"Attempt {attempt + 1}/{self.max_retries}: {error_type} - {error_msg}")
 
-                # Check if it's an EngineCore issue (common with large models)
-                if 'EngineCore' in error_msg:
-                    # Try reducing the request size
-                    if attempt == 0 and 'max_tokens' in kwargs:
-                        # First retry: reduce max_tokens
-                        original_max = kwargs['max_tokens']
-                        kwargs['max_tokens'] = min(original_max, 8192)
-                        logger.info(f"Reducing max_tokens from {original_max} to {kwargs['max_tokens']}")
+                # Handle different error types
+                if isinstance(e, (APIConnectionError, APITimeoutError)):
+                    # Connection issues - wait longer before retrying
+                    wait_time = self.retry_delay * (attempt + 1)
+                    logger.info(f"Connection issue detected, waiting {wait_time} seconds before retry")
+                    time.sleep(wait_time)
 
-                    elif attempt == 1 and 'messages' in kwargs:
-                        # Second retry: truncate the message if it's too long
-                        for msg in kwargs['messages']:
-                            if isinstance(msg, dict) and 'content' in msg:
-                                content = msg['content']
-                                if len(content) > 10000:
-                                    msg['content'] = content[:10000] + "... [truncated]"
-                                    logger.info("Truncating message content to 10000 characters")
+                    # On later attempts, try to reduce load
+                    if attempt >= 2 and 'max_tokens' in kwargs:
+                        original_max = kwargs.get('max_tokens', 32768)
+                        kwargs['max_tokens'] = min(original_max, 4096)
+                        logger.info(f"Reducing max_tokens to {kwargs['max_tokens']} to reduce load")
 
-                    elif attempt == 2:
-                        # Final retry: return a fallback response
-                        logger.error("All retries failed, returning fallback response")
-                        return self._create_fallback_response(kwargs)
+                elif isinstance(e, InternalServerError):
+                    # Server errors - apply progressive degradation
+                    if 'EngineCore' in error_msg or '500' in error_msg:
+                        # Try reducing the request size progressively
+                        if attempt == 0 and 'max_tokens' in kwargs:
+                            # First retry: reduce max_tokens
+                            original_max = kwargs.get('max_tokens', 32768)
+                            kwargs['max_tokens'] = min(original_max, 8192)
+                            logger.info(f"Reducing max_tokens from {original_max} to {kwargs['max_tokens']}")
 
-                # Wait before retrying
-                time.sleep(self.retry_delay * (attempt + 1))
+                        elif attempt == 1 and 'messages' in kwargs:
+                            # Second retry: truncate the message if it's too long
+                            for msg in kwargs['messages']:
+                                if isinstance(msg, dict) and 'content' in msg:
+                                    content = msg['content']
+                                    if len(content) > 10000:
+                                        msg['content'] = content[:10000] + "... [truncated]"
+                                        logger.info("Truncating message content to 10000 characters")
+
+                            # Also reduce max_tokens further
+                            if 'max_tokens' in kwargs:
+                                kwargs['max_tokens'] = min(kwargs.get('max_tokens', 8192), 4096)
+
+                        elif attempt >= 2:
+                            # Further attempts: more aggressive reductions
+                            if 'max_tokens' in kwargs:
+                                kwargs['max_tokens'] = min(kwargs.get('max_tokens', 4096), 2048)
+
+                            # Truncate messages more aggressively
+                            if 'messages' in kwargs:
+                                for msg in kwargs['messages']:
+                                    if isinstance(msg, dict) and 'content' in msg:
+                                        content = msg['content']
+                                        if len(content) > 5000:
+                                            msg['content'] = content[:5000] + "... [truncated]"
+
+                    # Wait before retrying
+                    time.sleep(self.retry_delay * (attempt + 1))
 
             except Exception as e:
-                # For other errors, raise immediately
-                logger.error(f"Unexpected error: {e}")
-                raise
+                # For other unexpected errors, log but still retry
+                logger.error(f"Unexpected error: {type(e).__name__}: {e}")
+                last_error = e
+
+                # Still wait and retry for unexpected errors
+                time.sleep(self.retry_delay * (attempt + 1))
 
         # If all retries failed, return a fallback response
         logger.error(f"All {self.max_retries} attempts failed")

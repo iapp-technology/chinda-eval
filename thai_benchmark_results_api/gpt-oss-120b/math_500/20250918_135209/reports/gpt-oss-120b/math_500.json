@@ -1,0 +1,54 @@
+{
+    "name": "gpt-oss-120b@math_500",
+    "dataset_name": "math_500",
+    "dataset_pretty_name": "MATH-500",
+    "dataset_description": "MATH-500 is a benchmark for evaluating mathematical reasoning capabilities of AI models. It consists of 500 diverse math problems across five levels of difficulty, designed to test a model's ability to solve complex mathematical problems by generating step-by-step solutions and providing the correct final answer.",
+    "model_name": "gpt-oss-120b",
+    "score": 0.95,
+    "metrics": [
+        {
+            "name": "mean_acc",
+            "num": 500,
+            "score": 0.95,
+            "macro_score": 0.95,
+            "categories": [
+                {
+                    "name": [
+                        "default"
+                    ],
+                    "num": 500,
+                    "score": 0.95,
+                    "macro_score": 0.9583,
+                    "subsets": [
+                        {
+                            "name": "Level 1",
+                            "score": 1.0,
+                            "num": 43
+                        },
+                        {
+                            "name": "Level 2",
+                            "score": 0.9778,
+                            "num": 90
+                        },
+                        {
+                            "name": "Level 3",
+                            "score": 0.9524,
+                            "num": 105
+                        },
+                        {
+                            "name": "Level 4",
+                            "score": 0.9062,
+                            "num": 128
+                        },
+                        {
+                            "name": "Level 5",
+                            "score": 0.9552,
+                            "num": 134
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "analysis": "N/A"
+}

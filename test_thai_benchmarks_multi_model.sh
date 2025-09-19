@@ -25,7 +25,8 @@ VLLM_PORT=8801
 VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
 BASE_OUTPUT_DIR="thai_benchmark_results_api"
 CONDA_ENV="chinda-eval"
-MAX_PARALLEL=20  # Limit concurrent benchmarks
+MAX_PARALLEL=3  # Limit concurrent benchmarks
+EVAL_BATCH_SIZE=20 # Limit the number of samples to generate at once
 DEFAULT_MAX_SAMPLES=1500 # Default maximum samples per benchmark
 
 # Per-benchmark sample limits (override DEFAULT_MAX_SAMPLES)
@@ -96,7 +97,7 @@ done
 if [ ${#MODEL_ORDER[@]} -eq 0 ]; then
     MODEL_ORDER=(
         # "gpt-oss-20b"
-        "gpt-oss-120b"
+        # "gpt-oss-120b"
         "qwen3-next-80b-instruct"
         "qwen3-next-80b-thinking"
     )
@@ -275,6 +276,7 @@ run_benchmark() {
         --datasets $benchmark \
         --dataset-hub huggingface \
         --work-dir "$bench_output_dir" \
+        --eval-batch-size $EVAL_BATCH_SIZE \
         --generation-config '{"do_sample": false, "temperature": 0.0, "max_new_tokens": 32768}' \
         --timeout 300 \
         --limit $sample_limit > "$bench_output_dir/output.log" 2>&1

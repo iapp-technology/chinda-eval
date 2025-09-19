@@ -1,6 +1,0 @@
-Multi-Model Evaluation Report
-=============================
-Date: Thu Sep 18 13:41:49 UTC 2025
-Total Duration: 217s
-
-Models Evaluated (in order):

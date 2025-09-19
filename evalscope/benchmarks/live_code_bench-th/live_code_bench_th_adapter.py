@@ -39,7 +39,7 @@ logger = get_logger()
         few_shot_num=0,
         train_split=None,
         eval_split='test',
-        prompt_template='Generate an executable Python function generated from the given prompt. Return the function body without invoking it at the final solution. {question}'
+        prompt_template='Generate an executable Python function generated from the given prompt. Return the function body without invoking it at the final solution. Provide ONLY ONE code block with your complete solution. Do not include multiple code blocks or explanations. {question}'
     )
 )
 class LiveCodeBenchThaiAdapter(DefaultDataAdapter):

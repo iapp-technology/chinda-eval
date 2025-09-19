@@ -23,9 +23,9 @@ class CodeGenerationPromptConstants:
         '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user'  # noqa: E501
     )
 
-    FORMATTING_MESSAGE_WITH_STARTER_CODE = 'You will use the following starter code to write the solution to the problem and enclose your code within delimiters.'  # noqa: E501
+    FORMATTING_MESSAGE_WITH_STARTER_CODE = 'You will use the following starter code to write the solution to the problem. Provide ONLY ONE code block with your complete solution. Do not include multiple code blocks or explanations. Enclose your code within delimiters.'  # noqa: E501
 
-    FORMATTING_WITHOUT_STARTER_CODE = 'Read the inputs from stdin solve the problem and write the answer to stdout (do not directly test on the sample inputs). Enclose your code within delimiters as follows.'  # noqa: E501
+    FORMATTING_WITHOUT_STARTER_CODE = 'Read the inputs from stdin solve the problem and write the answer to stdout (do not directly test on the sample inputs). Provide ONLY ONE code block with your complete solution. Do not include multiple code blocks or explanations. Enclose your code within delimiters as follows.'  # noqa: E501
 
     PYTHON_FORMAT = '```python\n# YOUR CODE HERE\n```\n\n'
 
@@ -67,7 +67,7 @@ class SelfRepairPromptConstants:
 
     FORMATTING_MESSAGE = 'You will use the following starter code to write the solution to the problem and enclose your code within delimiters.'  # noqa: E501
 
-    FORMATTING_WITHOUT_STARTER_CODE = 'Read the inputs from stdin solve the problem and write the answer to stdout (do not directly test on the sample inputs). Enclose your code within delimiters as follows.'  # noqa: E501
+    FORMATTING_WITHOUT_STARTER_CODE = 'Read the inputs from stdin solve the problem and write the answer to stdout (do not directly test on the sample inputs). Provide ONLY ONE code block with your complete solution. Do not include multiple code blocks or explanations. Enclose your code within delimiters as follows.'  # noqa: E501
 
 
 def make_code_execution_prompt(code, input, cot):

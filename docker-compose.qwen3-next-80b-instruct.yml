@@ -17,8 +17,11 @@ services:
       - "8801:8000"  # Map internal port 8000 to external 8801
     environment:
       - NCCL_IGNORE_DISABLED_P2P=1
-      - VLLM_ATTENTION_BACKEND=TRITON_ATTN_VLLM_V1
+      - VLLM_ATTENTION_BACKEND=FLASH_ATTN
       - VLLM_USE_MODELSCOPE=true
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+      - VLLM_ENGINE_ITERATION_TIMEOUT=600
+      - CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://0.0.0.0:8000/v1/models" ]
       interval: 30s
@@ -29,11 +32,12 @@ services:
       - --tensor-parallel-size=8
       - --served-model-name=qwen3-next-80b-instruct
       - --trust-remote-code
-      - --max-model-len=24576
+      - --max-model-len=8192
       - --dtype=auto
-      - --gpu-memory-utilization=0.92
-      - --max-num-seqs=128
-      - --max-num-batched-tokens=32768
+      - --gpu-memory-utilization=0.80
+      - --max-num-seqs=32
+      - --max-num-batched-tokens=8192
       - --enable-chunked-prefill
+      - --block-size=16
       - --enforce-eager
     restart: unless-stopped

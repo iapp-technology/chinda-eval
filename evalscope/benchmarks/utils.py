@@ -34,6 +34,7 @@ def strip_thinking_blocks(text: str) -> str:
 def extract_code_block(text: str, language: str = 'python') -> str:
     """
     Extract code block from markdown-formatted text.
+    If multiple code blocks exist, returns the longest one.
 
     Args:
         text: The text containing code blocks
@@ -48,17 +49,36 @@ def extract_code_block(text: str, language: str = 'python') -> str:
     # First strip any thinking blocks
     text = strip_thinking_blocks(text)
 
-    # Try to extract language-specific code block
-    pattern = f'```{language}\\s*\\n(.*?)```'
-    match = re.search(pattern, text, re.DOTALL)
-    if match:
-        return match.group(1).strip()
+    # Collect all code blocks
+    all_code_blocks = []
 
-    # Try generic code block
-    pattern = '```\\s*\\n(.*?)```'
-    match = re.search(pattern, text, re.DOTALL)
-    if match:
-        return match.group(1).strip()
+    # Try to extract all language-specific code blocks
+    pattern = f'```{language}\\s*\\n(.*?)```'
+    matches = re.findall(pattern, text, re.DOTALL)
+    for match in matches:
+        if match.strip():
+            all_code_blocks.append(match.strip())
+
+    # Also try case-insensitive variant (e.g., Python vs python)
+    if language.lower() != language:
+        pattern = f'```{language.lower()}\\s*\\n(.*?)```'
+        matches = re.findall(pattern, text, re.DOTALL)
+        for match in matches:
+            if match.strip() and match.strip() not in all_code_blocks:
+                all_code_blocks.append(match.strip())
+
+    # Try generic code blocks if no language-specific ones found
+    if not all_code_blocks:
+        pattern = '```\\s*\\n(.*?)```'
+        matches = re.findall(pattern, text, re.DOTALL)
+        for match in matches:
+            if match.strip():
+                all_code_blocks.append(match.strip())
+
+    # Return the longest code block
+    # This is typically the actual implementation rather than pseudocode
+    if all_code_blocks:
+        return max(all_code_blocks, key=len)
 
     # Return original text if no code block found
     return text
