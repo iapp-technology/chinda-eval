@@ -1,11 +1,36 @@
-# Thai Language Benchmarks with vLLM and GPT-OSS-20B
+# Chinda Evaluation Framework - Thai & English LLM Benchmarks
+
+A comprehensive evaluation framework for assessing Thai and English language models using EvalScope v2.0 with vLLM optimization.
+
+## ✨ Key Features
+
+- **9 Pre-configured Models**: Qwen3 (0.6B-32B), GPT-OSS (20B-120B), Qwen3-Next (80B)
+- **12+ Benchmarks**: Thai and English versions of math, reasoning, code generation, and instruction following
+- **Optimized Performance**: vLLM batching with 6-9x speedup through parallelization
+- **Docker-based**: Easy deployment with pre-configured Docker compose files
+- **Multi-GPU Support**: Automatic tensor parallelism (2-8 GPUs)
+- **Comprehensive Results**: Automated scoring and reporting
 
 ## 🚀 Quick Start
 
 ### 1. Start vLLM Server (Docker)
+
+#### Available Models
 ```bash
-# Start optimized vLLM server with batching
-docker compose -f dockers/docker-compose.gptoss20b.yml up -d
+# GPT-OSS Models
+docker compose -f dockers/docker-compose.gpt-oss-20b.yml up -d
+docker compose -f dockers/docker-compose.gpt-oss-120b.yml up -d
+
+# Qwen3 Models
+docker compose -f dockers/docker-compose.chinda-qwen3-0.6b.yml up -d
+docker compose -f dockers/docker-compose.chinda-qwen3-1.7b.yml up -d
+docker compose -f dockers/docker-compose.chinda-qwen3-8b.yml up -d
+docker compose -f dockers/docker-compose.chinda-qwen3-14b.yml up -d
+docker compose -f dockers/docker-compose.chinda-qwen3-32b.yml up -d
+
+# Qwen3-Next Models
+docker compose -f dockers/docker-compose.qwen3-next-80b-instruct.yml up -d
+docker compose -f dockers/docker-compose.qwen3-next-80b-thinking.yml up -d
 
 # Check server status
 curl http://localhost:8801/v1/models
@@ -13,13 +38,31 @@ curl http://localhost:8801/v1/models
 
 ### 2. Run Benchmarks
 
-#### For Maximum Speed (Parallel Execution)
+#### Multi-Model Evaluation (Recommended)
+```bash
+# Run all configured models with all benchmarks
+./run_thai_benchmarks.sh
+
+# Run specific models only
+./run_thai_benchmarks.sh --models chinda-qwen3-0.6b chinda-qwen3-1.7b
+
+# Run specific benchmarks only
+./run_thai_benchmarks.sh --benchmarks aime24-th hellaswag-th math_500-th
+
+# Combine model and benchmark selection
+./run_thai_benchmarks.sh --models gpt-oss-20b --benchmarks aime24-th hellaswag-th
+
+# Set custom sample limit (default: 1500)
+./run_thai_benchmarks.sh --limit 100
+```
+
+#### Single Model - Parallel Execution
 ```bash
 # Run 3 benchmarks concurrently - 6-9x speedup
 ./tests/test_thai_benchmarks_parallel.sh
 ```
 
-#### For Stability (Sequential Execution)
+#### Single Model - Sequential Execution
 ```bash
 # Run benchmarks one by one - 2-3x speedup from batching
 ./tests/test_thai_benchmarks_sequence.sh
@@ -40,19 +83,44 @@ watch -n 1 nvidia-smi
 # Kill running benchmarks if needed
 ./kill_benchmarks.sh  # Kill all benchmark processes
 
-# Stop vLLM server
-docker compose -f dockers/docker-compose.gptoss20b.yml down
+# Stop vLLM server (replace with your model)
+docker compose -f dockers/docker-compose.<model-name>.yml down
 ```
+
+## 🤖 Available Models
+
+| Model | Size | GPUs | Docker Compose File |
+|-------|------|------|-------------------|
+| **chinda-qwen3-0.6b** | 0.6B | 2 GPUs | `dockers/docker-compose.chinda-qwen3-0.6b.yml` |
+| **chinda-qwen3-1.7b** | 1.7B | 2 GPUs | `dockers/docker-compose.chinda-qwen3-1.7b.yml` |
+| **chinda-qwen3-8b** | 8B | 4 GPUs | `dockers/docker-compose.chinda-qwen3-8b.yml` |
+| **chinda-qwen3-14b** | 14B | 8 GPUs | `dockers/docker-compose.chinda-qwen3-14b.yml` |
+| **chinda-qwen3-32b** | 32B | 8 GPUs | `dockers/docker-compose.chinda-qwen3-32b.yml` |
+| **gpt-oss-20b** | 20B | 4 GPUs | `dockers/docker-compose.gpt-oss-20b.yml` |
+| **gpt-oss-120b** | 120B | 8 GPUs | `dockers/docker-compose.gpt-oss-120b.yml` |
+| **qwen3-next-80b-instruct** | 80B | 8 GPUs | `dockers/docker-compose.qwen3-next-80b-instruct.yml` |
+| **qwen3-next-80b-thinking** | 80B | 8 GPUs | `dockers/docker-compose.qwen3-next-80b-thinking.yml` |
 
 ## 📊 Available Thai Benchmarks
 
 | Benchmark | Description | Dataset | Samples | Metrics |
 |-----------|------------|---------|---------|---------|
 | **aime24-th** | AIME 2024 math problems in Thai | `iapp/aime_2024-th` | 30 | Accuracy |
-| **hellaswag-th** | Commonsense reasoning | `Patt/HellaSwag_TH_cleanned` | 5,034 | Accuracy |
-| **humaneval-th** | Code generation | `iapp/openai_humaneval-th` | 164 | Pass@1 |
-| **ifeval-th** | Instruction following | `scb10x/ifeval-th` | 215 | Prompt/Inst level |
-| **math_500-th** | 500 math problems | `iapp/math-500-th` | 500 | Accuracy |
+| **hellaswag-th** | Commonsense reasoning in Thai | `Patt/HellaSwag_TH_cleanned` | 5,034 | Accuracy |
+| **ifeval-th** | Instruction following in Thai | `scb10x/ifeval-th` | 215 | Prompt/Inst level |
+| **math_500-th** | 500 math problems in Thai | `iapp/math-500-th` | 500 | Accuracy |
+| **code_switching** | Thai-English code switching | `iapp/code_switching` | 215 | Language Accuracy |
+| **live_code_bench-th** | Code generation with execution (Thai) | `iapp/live_code_bench-th` | 200 | Pass@1 |
+| **openthaieval** | Thai national exams (O-NET, TGAT) | `iapp/openthaieval` | 2,000+ | Accuracy |
+
+### English Benchmarks
+| Benchmark | Description | Dataset | Samples | Metrics |
+|-----------|------------|---------|---------|---------|
+| **aime24** | AIME 2024 math problems | `iapp/aime_2024` | 30 | Accuracy |
+| **hellaswag** | Commonsense reasoning | `hellaswag` | 10,042 | Accuracy |
+| **ifeval** | Instruction following | `google/IFEval` | 541 | Prompt/Inst level |
+| **math_500** | 500 math problems | `iapp/math-500` | 500 | Accuracy |
+| **live_code_bench** | Code generation with execution | `livecodebench/code_generation_lite` | 200 | Pass@1 |
 
 ## ⚡ Performance Optimizations
 
@@ -69,11 +137,12 @@ The Docker container is configured with optimizations for batch processing:
 
 ### Execution Strategies
 
-| Strategy | Script | Speedup | Use Case |
-|----------|--------|---------|----------|
-| **Parallel** | `tests/test_thai_benchmarks_parallel.sh` | 6-9x | Maximum speed, high resource usage |
-| **Sequential** | `tests/test_thai_benchmarks_sequence.sh` | 2-3x | Stable, lower resource usage |
-| **Single** | `tests/test_thai_single_benchmark.sh` | 1x | Testing individual benchmarks |
+| Strategy | Script | Use Case |
+|----------|--------|----------|
+| **Multi-Model** | `run_thai_benchmarks.sh` | Evaluate multiple models systematically |
+| **Parallel** | `tests/test_thai_benchmarks_parallel.sh` | Single model, maximum speed |
+| **Sequential** | `tests/test_thai_benchmarks_sequence.sh` | Single model, stable execution |
+| **Single** | `tests/test_thai_single_benchmark.sh` | Test individual benchmarks |
 
 ### How Speed Improvements Work
 
@@ -94,32 +163,43 @@ The Docker container is configured with optimizations for batch processing:
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────┐
-│   Thai Benchmarks   │
-│  (evalscope eval)   │
-└──────────┬──────────┘
-           │ OpenAI API
-           ▼
-┌─────────────────────┐
-│   vLLM Server       │
-│  (Docker Container) │
-│   Port: 8801        │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│   GPT-OSS-20B       │
-│  4x H100 80GB GPUs  │
-│  Tensor Parallel=4  │
-└─────────────────────┘
+┌─────────────────────────┐
+│  Chinda Eval Framework  │
+│   (run_thai_benchmarks) │
+└───────────┬─────────────┘
+            │
+┌───────────▼─────────────┐
+│   Benchmark Runners     │
+│  - Thai Benchmarks      │
+│  - English Benchmarks   │
+│  (evalscope eval)       │
+└───────────┬─────────────┘
+            │ OpenAI API
+            ▼
+┌─────────────────────────┐
+│    vLLM Server          │
+│  (Docker Container)     │
+│    Port: 8801           │
+└───────────┬─────────────┘
+            │
+┌───────────▼─────────────┐
+│    Language Models      │
+│  - Qwen3 (0.6B-32B)     │
+│  - GPT-OSS (20B-120B)   │
+│  - Qwen3-Next (80B)     │
+│  Tensor Parallel=2-8    │
+└─────────────────────────┘
 ```
 
 ## 🛠️ Setup Requirements
 
 ### Hardware
-- **GPUs**: 4x H100 80GB (or equivalent)
+- **GPUs**: Varies by model (2-8 GPUs required)
+  - Small models (0.6B-8B): 2-4 GPUs
+  - Medium models (14B-32B): 4-8 GPUs
+  - Large models (80B-120B): 8 GPUs
 - **RAM**: 128GB+ recommended
-- **Storage**: 100GB+ for model and results
+- **Storage**: 100GB+ for models and results
 
 ### Software
 - Docker & Docker Compose
@@ -127,30 +207,47 @@ The Docker container is configured with optimizations for batch processing:
 - Python 3.10+
 - Conda environment: `chinda-eval`
 
-### Model
-- **Model**: GPT-OSS-20B (20 billion parameters)
-- **Location**: `/mnt/disk3/openai_gpt-oss-20b`
-- **Format**: HuggingFace compatible
+### Models
+All models are pre-configured in Docker compose files with appropriate:
+- GPU allocation
+- Memory settings
+- Tensor parallelism
+- Batch processing optimizations
 
 ## 📁 Project Structure
 
 ```
 chinda-eval/
-├── dockers/docker-compose.gptoss20b.yml   # vLLM server configuration
-├── evalscope/
-│   └── benchmarks/                # Benchmark adapters
-│       ├── aime24-th/
+├── run_thai_benchmarks.sh          # Main multi-model benchmark runner
+├── kill_benchmarks.sh              # Universal process killer
+├── dockers/                        # Docker configurations
+│   ├── docker-compose.chinda-qwen3-*.yml  # Qwen3 models
+│   ├── docker-compose.gpt-oss-*.yml       # GPT-OSS models
+│   └── docker-compose.qwen3-next-*.yml    # Qwen3-Next models
+├── evalscope/                      # Core evaluation framework
+│   └── benchmarks/                 # Benchmark adapters
+│       ├── aime24/                 # English benchmarks
+│       ├── aime24-th/              # Thai benchmarks
+│       ├── code_switching/
+│       ├── hellaswag/
 │       ├── hellaswag-th/
-│       ├── humaneval-th/
+│       ├── ifeval/
 │       ├── ifeval-th/
-│       └── math_500-th/
-├── outputs/                        # Results directory
-├── run_thai_benchmarks.sh          # Main multi-model runner
-├── tests/                          # Test scripts
-│   ├── test_thai_benchmarks_parallel.sh  # Parallel execution
-│   ├── test_thai_benchmarks_sequence.sh  # Sequential execution
-│   └── test_thai_single_benchmark.sh     # Single benchmark test
-└── kill_benchmarks.sh              # Stop all benchmark processes
+│       ├── live_code_bench/
+│       ├── live_code_bench-th/
+│       ├── math_500/
+│       ├── math_500-th/
+│       └── openthaieval/
+├── tests/                          # Test and utility scripts
+│   ├── test_thai_benchmarks_parallel.sh
+│   ├── test_thai_benchmarks_sequence.sh
+│   ├── test_thai_single_benchmark.sh
+│   ├── verify_benchmarks.py
+│   ├── verify_datasets.py
+│   └── verify_correct_datasets.py
+└── outputs/                        # Benchmark results
+    └── {model_name}/
+        └── {benchmark_name}/
 ```
 
 ## 📝 Script Reference
