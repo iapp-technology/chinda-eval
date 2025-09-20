@@ -17,9 +17,6 @@ services:
       - "8801:8000"  # Map internal port 8000 to external 8801
     environment:
       - NCCL_IGNORE_DISABLED_P2P=1
-      - CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-      - NCCL_P2P_DISABLE=1
-      - VLLM_USE_V1=0
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://0.0.0.0:8000/v1/models" ]
       interval: 30s
