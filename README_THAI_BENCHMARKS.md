@@ -38,8 +38,7 @@ curl http://localhost:8801/v1/models
 watch -n 1 nvidia-smi
 
 # Kill running benchmarks if needed
-./kill_parallel_benchmarks.sh  # Kill parallel execution only
-./kill_all_benchmarks.sh       # Kill all benchmark processes
+./kill_benchmarks.sh  # Kill all benchmark processes
 
 # Stop vLLM server
 docker compose -f dockers/docker-compose.gptoss20b.yml down
@@ -151,8 +150,7 @@ chinda-eval/
 │   ├── test_thai_benchmarks_parallel.sh  # Parallel execution
 │   ├── test_thai_benchmarks_sequence.sh  # Sequential execution
 │   └── test_thai_single_benchmark.sh     # Single benchmark test
-├── kill_parallel_benchmarks.sh    # Stop parallel tests
-└── kill_all_benchmarks.sh         # Stop all tests
+└── kill_benchmarks.sh              # Stop all benchmark processes
 ```
 
 ## 📝 Script Reference
@@ -172,15 +170,14 @@ chinda-eval/
 ### Control Scripts
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `kill_parallel_benchmarks.sh` | Stop parallel benchmark processes | `./kill_parallel_benchmarks.sh` |
-| `kill_all_benchmarks.sh` | Stop all benchmark processes | `./kill_all_benchmarks.sh` |
+| `kill_benchmarks.sh` | Stop all benchmark processes | `./kill_benchmarks.sh` |
 
 ### Utility Scripts
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `verify_benchmarks.py` | Check benchmark registration | `python3 verify_benchmarks.py` |
-| `verify_datasets.py` | Verify dataset availability | `python3 verify_datasets.py` |
-| `verify_correct_datasets.py` | Check dataset configurations | `python3 verify_correct_datasets.py` |
+| `tests/verify_benchmarks.py` | Check benchmark registration | `python3 tests/verify_benchmarks.py` |
+| `tests/verify_datasets.py` | Verify dataset availability | `python3 tests/verify_datasets.py` |
+| `tests/verify_correct_datasets.py` | Check dataset configurations | `python3 tests/verify_correct_datasets.py` |
 
 ## 🔧 Configuration Details
 
@@ -246,7 +243,7 @@ docker compose -f dockers/docker-compose.gptoss20b.yml restart
 #### Benchmarks Hanging
 ```bash
 # Kill stuck processes
-./kill_all_benchmarks.sh
+./kill_benchmarks.sh
 
 # Check for orphaned processes
 ps aux | grep evalscope
@@ -255,7 +252,7 @@ ps aux | grep evalscope
 #### Dataset Not Found
 ```bash
 # Verify datasets are accessible
-python3 verify_correct_datasets.py
+python3 tests/verify_correct_datasets.py
 
 # Check HuggingFace login if needed
 huggingface-cli login

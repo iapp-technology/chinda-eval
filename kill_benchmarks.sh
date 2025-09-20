@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Script to kill all processes spawned by test_benchmarks_parallel_fixed.sh
+# Universal script to kill all running benchmark processes
+# Works for both parallel and sequential benchmark runs
 
 # Colors for output
 RED='\033[0;31m'
@@ -10,43 +11,54 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 echo -e "${YELLOW}=========================================${NC}"
-echo -e "${YELLOW}Killing Parallel Benchmark Processes${NC}"
+echo -e "${YELLOW}Killing All Benchmark Processes${NC}"
 echo -e "${YELLOW}=========================================${NC}"
 
-# First, check if the parent script is running
-PARENT_SCRIPT="test_thai_benchmarks_parallel.sh"
-PARENT_PID=$(ps aux | grep "$PARENT_SCRIPT" | grep -v grep | awk '{print $2}' | head -1)
-
-if [ ! -z "$PARENT_PID" ]; then
-    echo -e "${RED}Parent script is running with PID: $PARENT_PID${NC}"
-    echo -e "${YELLOW}Killing parent script first...${NC}"
-    kill -TERM $PARENT_PID 2>/dev/null
-    sleep 1
-    # Force kill if still running
-    if ps -p $PARENT_PID > /dev/null 2>&1; then
-        kill -9 $PARENT_PID 2>/dev/null
-    fi
-    echo -e "${GREEN}✓ Parent script terminated${NC}"
-fi
-
-# Find all evalscope processes that were likely spawned by the parallel script
-echo ""
-echo -e "${YELLOW}Looking for evalscope processes from parallel execution...${NC}"
-
-# The parallel script runs these benchmarks:
-BENCHMARKS=("aime24" "aime24-th" "hellaswag" "hellaswag-th" "ifeval" "ifeval-th" "math_500" "math_500-th")
-
-# Track found processes
+# Track all PIDs to kill
 declare -a PIDS_TO_KILL
 TOTAL_FOUND=0
 
+# 1. Find the main benchmark runner scripts
+echo -e "${YELLOW}Checking for main benchmark runner scripts...${NC}"
+
+# Check for run_thai_benchmarks.sh (main multi-model runner)
+MAIN_PID=$(ps aux | grep "run_thai_benchmarks.sh" | grep -v grep | awk '{print $2}' | head -1)
+if [ ! -z "$MAIN_PID" ]; then
+    echo -e "${RED}Main runner script is running with PID: $MAIN_PID${NC}"
+    kill -TERM $MAIN_PID 2>/dev/null
+    sleep 1
+    if ps -p $MAIN_PID > /dev/null 2>&1; then
+        kill -9 $MAIN_PID 2>/dev/null
+    fi
+    echo -e "${GREEN}✓ Main runner script terminated${NC}"
+fi
+
+# Check for test benchmark scripts
+TEST_SCRIPTS=$(ps aux | grep -E "test.*benchmark.*\.sh" | grep -v grep | awk '{print $2}')
+if [ ! -z "$TEST_SCRIPTS" ]; then
+    echo -e "${YELLOW}Found test benchmark scripts:${NC}"
+    for pid in $TEST_SCRIPTS; do
+        echo -e "  ${RED}PID $pid${NC}"
+        kill -TERM $pid 2>/dev/null
+    done
+    sleep 1
+    echo -e "${GREEN}✓ Test scripts terminated${NC}"
+fi
+
+# 2. Find all evalscope processes
+echo ""
+echo -e "${YELLOW}Looking for evalscope processes...${NC}"
+
+# All possible benchmark names
+BENCHMARKS=("aime24" "aime24-th" "hellaswag" "hellaswag-th" "humaneval" "humaneval-th"
+            "ifeval" "ifeval-th" "math_500" "math_500-th" "code_switching"
+            "live_code_bench" "live_code_bench-th" "openthaieval")
+
 for benchmark in "${BENCHMARKS[@]}"; do
-    # Find processes for this benchmark
     PIDS=$(ps aux | grep "evalscope eval" | grep "datasets $benchmark" | grep -v grep | awk '{print $2}')
 
     if [ ! -z "$PIDS" ]; then
         for pid in $PIDS; do
-            # Get process details
             PROC_INFO=$(ps -p $pid -o pid,etime,args --no-headers 2>/dev/null)
             if [ ! -z "$PROC_INFO" ]; then
                 ELAPSED=$(echo "$PROC_INFO" | awk '{print $2}')
@@ -58,19 +70,17 @@ for benchmark in "${BENCHMARKS[@]}"; do
     fi
 done
 
-# Also look for processes with the specific work directory pattern
+# 3. Also check for processes using outputs directory
 echo ""
 echo -e "${YELLOW}Checking for processes using outputs directory...${NC}"
 
 WORK_DIR_PIDS=$(ps aux | grep -E "work-dir.*outputs|outputs.*work-dir" | grep -v grep | awk '{print $2}')
 
 for pid in $WORK_DIR_PIDS; do
-    # Check if not already in our list
     if [[ ! " ${PIDS_TO_KILL[@]} " =~ " ${pid} " ]]; then
         PROC_INFO=$(ps -p $pid -o pid,etime,args --no-headers 2>/dev/null)
         if [ ! -z "$PROC_INFO" ]; then
             ELAPSED=$(echo "$PROC_INFO" | awk '{print $2}')
-            # Try to extract benchmark name from command
             BENCHMARK=$(echo "$PROC_INFO" | grep -oE "datasets [a-z0-9_-]+" | awk '{print $2}')
             if [ -z "$BENCHMARK" ]; then
                 BENCHMARK="unknown"
@@ -82,7 +92,20 @@ for pid in $WORK_DIR_PIDS; do
     fi
 done
 
-# Kill processes if found
+# 4. Look for any other Python evalscope processes
+echo ""
+echo -e "${YELLOW}Checking for other evalscope/benchmark processes...${NC}"
+
+OTHER_PIDS=$(ps aux | grep -E "python.*evalscope|python.*benchmark" | grep -v grep | awk '{print $2}')
+for pid in $OTHER_PIDS; do
+    if [[ ! " ${PIDS_TO_KILL[@]} " =~ " ${pid} " ]]; then
+        echo -e "  ${RED}PID $pid${NC} - Python benchmark process"
+        PIDS_TO_KILL+=($pid)
+        ((TOTAL_FOUND++))
+    fi
+done
+
+# 5. Kill all collected processes
 if [ $TOTAL_FOUND -gt 0 ]; then
     echo ""
     echo -e "${YELLOW}Found $TOTAL_FOUND process(es) to terminate${NC}"
@@ -94,7 +117,7 @@ if [ $TOTAL_FOUND -gt 0 ]; then
 
     sleep 2
 
-    # Check for any survivors and force kill
+    # Check for survivors and force kill
     SURVIVORS=0
     for pid in "${PIDS_TO_KILL[@]}"; do
         if ps -p $pid > /dev/null 2>&1; then
@@ -109,14 +132,13 @@ if [ $TOTAL_FOUND -gt 0 ]; then
 
     echo -e "${GREEN}✓ All processes terminated successfully${NC}"
 else
-    echo -e "${GREEN}No processes from parallel benchmark execution found${NC}"
+    echo -e "${GREEN}No benchmark processes found running${NC}"
 fi
 
-# Also clean up any background shell jobs that might be hanging
+# 6. Clean up background shell jobs
 echo ""
 echo -e "${YELLOW}Checking for background shell jobs...${NC}"
 
-# Look for bash processes that might be running benchmark functions
 BASH_PROCS=$(ps aux | grep -E "bash.*run_benchmark|bash.*test_benchmark" | grep -v grep | awk '{print $2}')
 
 if [ ! -z "$BASH_PROCS" ]; then
@@ -131,28 +153,27 @@ else
     echo -e "${GREEN}No background bash processes found${NC}"
 fi
 
-# Clean up any lock files or temporary files
+# 7. Clean up temporary files
 echo ""
 echo -e "${YELLOW}Cleaning up temporary files...${NC}"
 
-# Remove any PID files that might have been created
 if [ -d "./outputs" ]; then
     find ./outputs -name "*.pid" -type f -delete 2>/dev/null
     find ./outputs -name "*.lock" -type f -delete 2>/dev/null
     echo -e "${GREEN}✓ Cleaned up temporary files${NC}"
 fi
 
-# Final verification
+# 8. Final verification
 echo ""
 echo -e "${BLUE}=========================================${NC}"
 echo -e "${BLUE}Final Status Check${NC}"
 echo -e "${BLUE}=========================================${NC}"
 
 # Check if any benchmark processes are still running
-REMAINING=$(ps aux | grep "evalscope eval" | grep -E "aime24-th|hellaswag-th|humaneval-th|ifeval-th|math_500-th" | grep -v grep | wc -l)
+REMAINING=$(ps aux | grep -E "evalscope|benchmark" | grep -v grep | grep -v "kill_benchmarks" | wc -l)
 
 if [ $REMAINING -eq 0 ]; then
-    echo -e "${GREEN}✓ All parallel benchmark processes successfully terminated!${NC}"
+    echo -e "${GREEN}✓ All benchmark processes successfully terminated!${NC}"
     echo -e "${GREEN}System is clean and ready for new benchmark runs.${NC}"
 
     # Show vLLM server status
@@ -164,10 +185,10 @@ if [ $REMAINING -eq 0 ]; then
         echo -e "${YELLOW}⚠ vLLM server is not responding${NC}"
     fi
 else
-    echo -e "${RED}⚠ Warning: $REMAINING benchmark process(es) still running:${NC}"
-    ps aux | grep "evalscope eval" | grep -E "aime24-th|hellaswag-th|humaneval-th|ifeval-th|math_500-th" | grep -v grep
+    echo -e "${RED}⚠ Warning: $REMAINING process(es) might still be running:${NC}"
+    ps aux | grep -E "evalscope|benchmark" | grep -v grep | grep -v "kill_benchmarks"
     echo ""
-    echo -e "${YELLOW}You may need to run: ./kill_all_benchmarks.sh${NC}"
+    echo -e "${YELLOW}You may need to manually kill these with: kill -9 <PID>${NC}"
 fi
 
 echo ""
