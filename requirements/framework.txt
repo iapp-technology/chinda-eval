@@ -27,3 +27,4 @@ tabulate
 tqdm
 transformers>=4.33
 word2number
+numpy

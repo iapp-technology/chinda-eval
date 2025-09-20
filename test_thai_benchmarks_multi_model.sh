@@ -23,7 +23,7 @@
 # Configuration
 VLLM_PORT=8801
 VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
-BASE_OUTPUT_DIR="thai_benchmark_results_api"
+BASE_OUTPUT_DIR="output"
 CONDA_ENV="chinda-eval"
 MAX_PARALLEL=3  # Limit concurrent benchmarks
 EVAL_BATCH_SIZE=20 # Limit the number of samples to generate at once
@@ -109,15 +109,15 @@ if [ ${#MODEL_ORDER[@]} -eq 0 ]; then
 fi
 
 # Note: Model configurations are defined in individual docker-compose files:
-# - docker-compose.gpt-oss-20b.yml
-# - docker-compose.gpt-oss-120b.yml
-# - docker-compose.qwen3-next-80b-instruct.yml
-# - docker-compose.qwen3-next-80b-thinking.yml
-# - docker-compose.chinda-qwen3-0.6b.yml
-# - docker-compose.chinda-qwen3-1.7b.yml
-# - docker-compose.chinda-qwen3-8b.yml
-# - docker-compose.chinda-qwen3-14b.yml
-# - docker-compose.chinda-qwen3-32b.yml
+# - dockers/docker-compose.gpt-oss-20b.yml
+# - dockers/docker-compose.gpt-oss-120b.yml
+# - dockers/docker-compose.qwen3-next-80b-instruct.yml
+# - dockers/docker-compose.qwen3-next-80b-thinking.yml
+# - dockers/docker-compose.chinda-qwen3-0.6b.yml
+# - dockers/docker-compose.chinda-qwen3-1.7b.yml
+# - dockers/docker-compose.chinda-qwen3-8b.yml
+# - dockers/docker-compose.chinda-qwen3-14b.yml
+# - dockers/docker-compose.chinda-qwen3-32b.yml
 
 # Colors for output
 RED='\033[0;31m'
@@ -183,7 +183,7 @@ start_vllm_server() {
     print_model "Starting vLLM server for $model_key"
 
     # Use the existing docker-compose file for this model
-    local compose_file="/home/saiuser/kobkrit/chinda-eval/docker-compose.${model_key}.yml"
+    local compose_file="/home/saiuser/kobkrit/chinda-eval/dockers/docker-compose.${model_key}.yml"
 
     if [[ ! -f "$compose_file" ]]; then
         print_error "Docker compose file not found for $model_key: $compose_file"
@@ -227,7 +227,7 @@ stop_vllm_docker() {
     print_info "Stopping vLLM server for $model_key..."
 
     # Use the existing docker-compose file for this model
-    local compose_file="/home/saiuser/kobkrit/chinda-eval/docker-compose.${model_key}.yml"
+    local compose_file="/home/saiuser/kobkrit/chinda-eval/dockers/docker-compose.${model_key}.yml"
 
     if [[ -f "$compose_file" ]]; then
         docker compose -f "$compose_file" down --remove-orphans

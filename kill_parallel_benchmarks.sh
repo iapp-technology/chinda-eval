@@ -60,9 +60,9 @@ done
 
 # Also look for processes with the specific work directory pattern
 echo ""
-echo -e "${YELLOW}Checking for processes using thai_benchmark_results_api directory...${NC}"
+echo -e "${YELLOW}Checking for processes using output directory...${NC}"
 
-WORK_DIR_PIDS=$(ps aux | grep -E "work-dir.*thai_benchmark_results_api|thai_benchmark_results_api.*work-dir" | grep -v grep | awk '{print $2}')
+WORK_DIR_PIDS=$(ps aux | grep -E "work-dir.*output|output.*work-dir" | grep -v grep | awk '{print $2}')
 
 for pid in $WORK_DIR_PIDS; do
     # Check if not already in our list
@@ -136,9 +136,9 @@ echo ""
 echo -e "${YELLOW}Cleaning up temporary files...${NC}"
 
 # Remove any PID files that might have been created
-if [ -d "./thai_benchmark_results_api" ]; then
-    find ./thai_benchmark_results_api -name "*.pid" -type f -delete 2>/dev/null
-    find ./thai_benchmark_results_api -name "*.lock" -type f -delete 2>/dev/null
+if [ -d "./output" ]; then
+    find ./output -name "*.pid" -type f -delete 2>/dev/null
+    find ./output -name "*.lock" -type f -delete 2>/dev/null
     echo -e "${GREEN}✓ Cleaned up temporary files${NC}"
 fi
 
