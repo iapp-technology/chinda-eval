@@ -5,7 +5,7 @@
 ### 1. Start vLLM Server (Docker)
 ```bash
 # Start optimized vLLM server with batching
-docker compose -f docker-compose.gptoss20b.yml up -d
+docker compose -f dockers/docker-compose.gptoss20b.yml up -d
 
 # Check server status
 curl http://localhost:8801/v1/models
@@ -16,19 +16,19 @@ curl http://localhost:8801/v1/models
 #### For Maximum Speed (Parallel Execution)
 ```bash
 # Run 3 benchmarks concurrently - 6-9x speedup
-./test_thai_benchmarks_parallel.sh
+./tests/test_thai_benchmarks_parallel.sh
 ```
 
 #### For Stability (Sequential Execution)
 ```bash
 # Run benchmarks one by one - 2-3x speedup from batching
-./test_thai_benchmarks_sequence.sh
+./tests/test_thai_benchmarks_sequence.sh
 ```
 
 #### Test Single Benchmark
 ```bash
 # Quick test with 10 samples
-./test_thai_single_benchmark.sh aime24-th
+./tests/test_thai_single_benchmark.sh aime24-th
 ```
 
 ### 3. Monitor & Control
@@ -42,7 +42,7 @@ watch -n 1 nvidia-smi
 ./kill_all_benchmarks.sh       # Kill all benchmark processes
 
 # Stop vLLM server
-docker compose -f docker-compose.gptoss20b.yml down
+docker compose -f dockers/docker-compose.gptoss20b.yml down
 ```
 
 ## 📊 Available Thai Benchmarks
@@ -61,7 +61,7 @@ docker compose -f docker-compose.gptoss20b.yml down
 The Docker container is configured with optimizations for batch processing:
 
 ```yaml
-# docker-compose.gptoss20b.yml optimizations
+# dockers/docker-compose.gptoss20b.yml optimizations
 - --max-num-seqs=256           # Process 256 sequences concurrently
 - --max-num-batched-tokens=32768  # Large batch size
 - --enable-chunked-prefill      # Efficient long prompt handling
@@ -72,9 +72,9 @@ The Docker container is configured with optimizations for batch processing:
 
 | Strategy | Script | Speedup | Use Case |
 |----------|--------|---------|----------|
-| **Parallel** | `test_thai_benchmarks_parallel.sh` | 6-9x | Maximum speed, high resource usage |
-| **Sequential** | `test_thai_benchmarks_sequence.sh` | 2-3x | Stable, lower resource usage |
-| **Single** | `test_thai_single_benchmark.sh` | 1x | Testing individual benchmarks |
+| **Parallel** | `tests/test_thai_benchmarks_parallel.sh` | 6-9x | Maximum speed, high resource usage |
+| **Sequential** | `tests/test_thai_benchmarks_sequence.sh` | 2-3x | Stable, lower resource usage |
+| **Single** | `tests/test_thai_single_benchmark.sh` | 1x | Testing individual benchmarks |
 
 ### How Speed Improvements Work
 
@@ -137,7 +137,7 @@ The Docker container is configured with optimizations for batch processing:
 
 ```
 chinda-eval/
-├── docker-compose.gptoss20b.yml   # vLLM server configuration
+├── dockers/docker-compose.gptoss20b.yml   # vLLM server configuration
 ├── evalscope/
 │   └── benchmarks/                # Benchmark adapters
 │       ├── aime24-th/
@@ -145,22 +145,29 @@ chinda-eval/
 │       ├── humaneval-th/
 │       ├── ifeval-th/
 │       └── math_500-th/
-├── thai_benchmark_results_api/    # Results directory
-├── test_thai_benchmarks_parallel.sh  # Parallel execution
-├── test_thai_benchmarks_sequence.sh   # Sequential execution
-├── test_thai_single_benchmark.sh           # Single benchmark test
-├── kill_parallel_benchmarks.sh        # Stop parallel tests
-└── kill_all_benchmarks.sh            # Stop all tests
+├── outputs/                        # Results directory
+├── run_thai_benchmarks.sh          # Main multi-model runner
+├── tests/                          # Test scripts
+│   ├── test_thai_benchmarks_parallel.sh  # Parallel execution
+│   ├── test_thai_benchmarks_sequence.sh  # Sequential execution
+│   └── test_thai_single_benchmark.sh     # Single benchmark test
+├── kill_parallel_benchmarks.sh    # Stop parallel tests
+└── kill_all_benchmarks.sh         # Stop all tests
 ```
 
 ## 📝 Script Reference
 
+### Main Runner Script
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `run_thai_benchmarks.sh` | Run all models with all benchmarks | `./run_thai_benchmarks.sh` |
+
 ### Testing Scripts
 | Script | Purpose | Usage |
 |--------|---------|-------|
-| `test_thai_benchmarks_parallel.sh` | Run benchmarks in parallel (fastest) | `./test_thai_benchmarks_parallel.sh` |
-| `test_thai_benchmarks_sequence.sh` | Run benchmarks sequentially | `./test_thai_benchmarks_sequence.sh` |
-| `test_thai_single_benchmark.sh` | Test one benchmark | `./test_thai_single_benchmark.sh <name>` |
+| `tests/test_thai_benchmarks_parallel.sh` | Run benchmarks in parallel (single model) | `./tests/test_thai_benchmarks_parallel.sh` |
+| `tests/test_thai_benchmarks_sequence.sh` | Run benchmarks sequentially | `./tests/test_thai_benchmarks_sequence.sh` |
+| `tests/test_thai_single_benchmark.sh` | Test one benchmark | `./tests/test_thai_single_benchmark.sh <name>` |
 
 ### Control Scripts
 | Script | Purpose | Usage |
@@ -226,12 +233,12 @@ MAX_PARALLEL=3  # concurrent benchmarks
 docker logs chinda-eval-vllm-server-gptoss-20b-1
 
 # Restart server
-docker compose -f docker-compose.gptoss20b.yml restart
+docker compose -f dockers/docker-compose.gptoss20b.yml restart
 ```
 
 #### Out of Memory
 ```bash
-# Reduce batch size in docker-compose.gptoss20b.yml
+# Reduce batch size in dockers/docker-compose.gptoss20b.yml
 - --max-num-seqs=128  # Reduce from 256
 - --gpu-memory-utilization=0.8  # Reduce from 0.9
 ```
@@ -256,9 +263,9 @@ huggingface-cli login
 
 ## 📊 Results
 
-Results are saved in `thai_benchmark_results_api/` with structure:
+Results are saved in `outputs/` with structure:
 ```
-thai_benchmark_results_api/
+outputs/
 ├── aime24-th/
 │   ├── output.log
 │   ├── status.txt
@@ -274,11 +281,11 @@ thai_benchmark_results_api/
 ### Viewing Results
 ```bash
 # Check benchmark status
-cat thai_benchmark_results_api/*/status.txt
+cat outputs/*/status.txt
 
 # View summary reports
-cat thai_benchmark_results_api/summary_report*.txt
-cat thai_benchmark_results_api/parallel_summary_*.txt
+cat outputs/summary_report*.txt
+cat outputs/parallel_summary_*.txt
 ```
 
 ## 🎯 GPT-OSS-20B Response Format
@@ -310,7 +317,7 @@ To add new Thai benchmarks:
 1. Create adapter in `evalscope/benchmarks/<name>/`
 2. Register with `@register_benchmark` decorator
 3. Ensure correct dataset ID and split
-4. Test with `./test_thai_single_benchmark.sh <name>`
+4. Test with `./tests/test_thai_single_benchmark.sh <name>`
 
 ## 📄 License
 
