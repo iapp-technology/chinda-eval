@@ -9,7 +9,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0', '1']  # Use 2 GPUs for 0.6B model
+              device_ids: ['0']  # Use 1 GPU for 0.6B model
               capabilities: [gpu]
     volumes:
       - /home/saiuser/disk6/ms-swift-merged/chinda-qwen3-0.6b-1-2-20250528-20_00-dpo:/models
@@ -24,7 +24,7 @@ services:
       retries: 20
     command:
       - --model=/models
-      - --tensor-parallel-size=2
+      - --tensor-parallel-size=1
       - --served-model-name=chinda-qwen3-0.6b
       - --trust-remote-code
       - --disable-frontend-multiprocessing

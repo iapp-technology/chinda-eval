@@ -9,7 +9,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0', '1', '2', '3', '4', '5', '6', '7']  # Use 8 GPUs for 14B model
+              device_ids: ['0', '1', '2', '3']  # Use 8 GPUs for 14B model
               capabilities: [gpu]
     volumes:
       - /home/saiuser/disk6/ms-swift-merged/chinda-qwen3-14b-1-2-20250528-20_00-dpo:/models
@@ -24,7 +24,7 @@ services:
       retries: 20
     command:
       - --model=/models
-      - --tensor-parallel-size=8
+      - --tensor-parallel-size=4
       - --served-model-name=chinda-qwen3-14b
       - --trust-remote-code
       - --disable-frontend-multiprocessing
