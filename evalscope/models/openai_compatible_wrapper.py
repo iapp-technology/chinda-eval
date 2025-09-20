@@ -104,27 +104,33 @@ class RobustOpenAIClient:
         logger.error(f"All {self.max_retries} attempts failed")
         return self._create_fallback_response(kwargs)
 
-    def _create_fallback_response(self, request_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_fallback_response(self, request_kwargs: Dict[str, Any]) -> Any:
         """Create a fallback response when all retries fail."""
-        return {
-            'id': 'error-fallback',
-            'object': 'chat.completion',
-            'created': int(time.time()),
-            'model': request_kwargs.get('model', 'unknown'),
-            'choices': [{
-                'index': 0,
-                'message': {
-                    'role': 'assistant',
-                    'content': 'ERROR: Model failed to generate response after multiple retries.'
-                },
-                'finish_reason': 'error'
-            }],
-            'usage': {
-                'prompt_tokens': 0,
-                'completion_tokens': 0,
-                'total_tokens': 0
-            }
-        }
+        from openai.types.chat import ChatCompletion, ChatCompletionMessage
+        from openai.types.chat.chat_completion import Choice, CompletionUsage
+
+        # Create a proper ChatCompletion object instead of a dict
+        return ChatCompletion(
+            id='error-fallback',
+            object='chat.completion',
+            created=int(time.time()),
+            model=request_kwargs.get('model', 'unknown'),
+            choices=[
+                Choice(
+                    index=0,
+                    message=ChatCompletionMessage(
+                        role='assistant',
+                        content='ERROR: Model failed to generate response after multiple retries.'
+                    ),
+                    finish_reason='stop'  # Changed from 'error' to 'stop' as it's a valid value
+                )
+            ],
+            usage=CompletionUsage(
+                prompt_tokens=0,
+                completion_tokens=0,
+                total_tokens=0
+            )
+        )
 
 
 def wrap_openai_client(client):
