@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  vllm-server-chinda-qwen3-1.7b:
+    image: vllm/vllm-openai:latest
+    shm_size: 64g
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0', '1', '2', '3']  # Use 4 GPUs for better performance
+              capabilities: [gpu]
+    volumes:
+      - /home/saiuser/disk6/ms-swift-merged/chinda-qwen3-1.7b-1-2-20250528-20_00-dpo:/models
+    ports:
+      - "8801:8000"  # Map internal port 8000 to external 8801
+    environment:
+      - NCCL_IGNORE_DISABLED_P2P=1
+      - VLLM_ATTENTION_BACKEND=FLASH_ATTN
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://0.0.0.0:8000/v1/models" ]
+      interval: 30s
+      timeout: 5s
+      retries: 20
+    command:
+      - --model=/models
+      - --tensor-parallel-size=4
+      - --served-model-name=chinda-qwen3-1.7b
+      - --trust-remote-code
+      - --max-model-len=32768
+      - --dtype=auto
+      - --gpu-memory-utilization=0.95
+      - --max-num-seqs=512
+      - --max-num-batched-tokens=32768
+      - --enable-chunked-prefill
+      - --enforce-eager
+    restart: unless-stopped

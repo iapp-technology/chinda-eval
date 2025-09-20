@@ -98,8 +98,13 @@ if [ ${#MODEL_ORDER[@]} -eq 0 ]; then
     MODEL_ORDER=(
         # "gpt-oss-20b"
         # "gpt-oss-120b"
-        "qwen3-next-80b-instruct"
-        "qwen3-next-80b-thinking"
+        # "qwen3-next-80b-instruct"
+        # "qwen3-next-80b-thinking"
+        "chinda-qwen3-0.6b"
+        "chinda-qwen3-1.7b"
+        "chinda-qwen3-8b"
+        "chinda-qwen3-14b"
+        "chinda-qwen3-32b"
     )
 fi
 
@@ -108,6 +113,11 @@ fi
 # - docker-compose.gpt-oss-120b.yml
 # - docker-compose.qwen3-next-80b-instruct.yml
 # - docker-compose.qwen3-next-80b-thinking.yml
+# - docker-compose.chinda-qwen3-0.6b.yml
+# - docker-compose.chinda-qwen3-1.7b.yml
+# - docker-compose.chinda-qwen3-8b.yml
+# - docker-compose.chinda-qwen3-14b.yml
+# - docker-compose.chinda-qwen3-32b.yml
 
 # Colors for output
 RED='\033[0;31m'
@@ -446,7 +456,7 @@ else:
 
 # Export functions and variables for parallel execution
 export -f run_benchmark print_message print_error print_warning print_info
-export VLLM_SERVER_URL DEFAULT_MAX_SAMPLES BASE_OUTPUT_DIR
+export VLLM_SERVER_URL DEFAULT_MAX_SAMPLES BASE_OUTPUT_DIR EVAL_BATCH_SIZE
 export -A BENCHMARK_LIMITS  # Export the associative array
 
 # Main execution
@@ -603,16 +613,15 @@ print_message "Models evaluated: ${MODEL_ORDER[@]}"
     echo ""
     echo "Models Evaluated (in order):"
     for model_key in "${MODEL_ORDER[@]}"; do
-        echo "  - $model_key (${MODELS[$model_key]})"
+        echo "  - $model_key"
     done
     echo ""
     echo "Individual Model Summaries:"
     echo ""
     for model_key in "${MODEL_ORDER[@]}"; do
-        model_name=${MODEL_SERVED_NAMES[$model_key]}
-        if [ -f "$BASE_OUTPUT_DIR/$model_name/score_summary.csv" ]; then
+        if [ -f "$BASE_OUTPUT_DIR/$model_key/score_summary.csv" ]; then
             echo "=== $model_key ==="
-            cat "$BASE_OUTPUT_DIR/$model_name/score_summary.csv"
+            cat "$BASE_OUTPUT_DIR/$model_key/score_summary.csv"
             echo ""
         fi
     done
