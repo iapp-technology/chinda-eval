@@ -3,18 +3,18 @@ version: '3.8'
 services:
   vllm-server-chinda-qwen3-14b:
     image: vllm/vllm-openai:latest
-    shm_size: 100g
+    shm_size: 250g
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0', '1', '2', '3']  # Use 8 GPUs for 14B model
+              device_ids: ['4', '5']
               capabilities: [gpu]
     volumes:
       - /home/saiuser/disk6/ms-swift-merged/chinda-qwen3-14b-1-2-20250528-20_00-dpo:/models
     ports:
-      - "8801:8000"  # Map internal port 8000 to external 8801
+      - "8814:8000"  # Map internal port 8000 to external 8814
     environment:
       - NCCL_IGNORE_DISABLED_P2P=1
     healthcheck:
@@ -24,10 +24,9 @@ services:
       retries: 20
     command:
       - --model=/models
-      - --tensor-parallel-size=4
+      - --tensor-parallel-size=2
       - --served-model-name=chinda-qwen3-14b
       - --trust-remote-code
-      - --disable-frontend-multiprocessing
       - --max-model-len=32768
-      - --gpu-memory-utilization=0.80
+      - --gpu-memory-utilization=0.90
     restart: unless-stopped
