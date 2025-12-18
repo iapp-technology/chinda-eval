@@ -25,8 +25,8 @@ VLLM_PORT=8801
 VLLM_SERVER_URL="http://localhost:${VLLM_PORT}/v1/chat/completions"
 BASE_OUTPUT_DIR="outputs"
 CONDA_ENV="chinda-eval"
-MAX_PARALLEL=3  # Limit concurrent benchmarks
-EVAL_BATCH_SIZE=20 # Limit the number of samples to generate at once
+MAX_PARALLEL=12  # Limit concurrent benchmarks
+EVAL_BATCH_SIZE=1 # Limit the number of samples to generate at once
 DEFAULT_MAX_SAMPLES=1500 # Default maximum samples per benchmark
 
 # Per-benchmark sample limits (override DEFAULT_MAX_SAMPLES)

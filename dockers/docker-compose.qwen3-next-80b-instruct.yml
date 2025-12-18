@@ -3,25 +3,20 @@ version: '3.8'
 services:
   vllm-server-qwen3-next-80b-instruct:
     image: vllm/vllm-openai:nightly # Use nightly image for Qwen3-Next models
-    shm_size: 100g
+    shm_size: 250g
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0', '1', '2', '3', '4', '5', '6', '7']  # Use all 8 GPUs for 80B model
+              device_ids: ['0', '1', '2', '3']  # Use 4 GPUs for 80B model
               capabilities: [gpu]
     volumes:
       - /mnt/disk3/Qwen_Qwen3-Next-80B-A3B-Instruct:/models
     ports:
-      - "8801:8000"  # Map internal port 8000 to external 8801
+      - "8880:8000"  # Map internal port 8000 to external 8880
     environment:
       - NCCL_IGNORE_DISABLED_P2P=1
-      - VLLM_ATTENTION_BACKEND=FLASH_ATTN
-      - VLLM_USE_MODELSCOPE=true
-      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-      - VLLM_ENGINE_ITERATION_TIMEOUT=600
-      - CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://0.0.0.0:8000/v1/models" ]
       interval: 30s
@@ -29,15 +24,9 @@ services:
       retries: 20
     command:
       - --model=/models
-      - --tensor-parallel-size=8
+      - --tensor-parallel-size=4
       - --served-model-name=qwen3-next-80b-instruct
       - --trust-remote-code
-      - --max-model-len=8192
-      - --dtype=auto
-      - --gpu-memory-utilization=0.80
-      - --max-num-seqs=32
-      - --max-num-batched-tokens=8192
-      - --enable-chunked-prefill
-      - --block-size=16
-      - --enforce-eager
+      - --max-model-len=32768
+      - --gpu-memory-utilization=0.90
     restart: unless-stopped

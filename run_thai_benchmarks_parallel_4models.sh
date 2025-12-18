@@ -20,7 +20,7 @@
 # Configuration
 BASE_OUTPUT_DIR="outputs"
 CONDA_ENV="chinda-eval"
-MAX_PARALLEL_PER_MODEL=10  # Max concurrent benchmarks per model
+MAX_PARALLEL_PER_MODEL=12  # Max concurrent benchmarks per model
 EVAL_BATCH_SIZE=1
 DEFAULT_MAX_SAMPLES=1500
 

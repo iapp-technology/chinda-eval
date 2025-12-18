@@ -8,7 +8,7 @@ echo "Port: 8801"
 echo "GPUs: 0 (single GPU for optimal performance)"
 
 # Start the Docker container
-docker compose -f dockers/docker-compose.chinda-qwen3-0.6b.yml up -d
+docker compose -f docker-compose.chinda-qwen3-0.6b.yml up -d
 
 # Check if Docker command was successful
 if [ $? -ne 0 ]; then
@@ -27,7 +27,7 @@ for i in {1..60}; do
         echo "✓ Server is ready!"
         echo ""
         echo "Server is running on http://localhost:8801"
-        echo "To view logs: docker compose -f dockers/docker-compose.chinda-qwen3-0.6b.yml logs -f"
+        echo "To view logs: docker compose -f docker-compose.chinda-qwen3-0.6b.yml logs -f"
         echo "To stop server: ./stop_chinda_qwen3_0.6b_vllm_docker.sh"
         exit 0
     fi
@@ -37,5 +37,5 @@ done
 
 echo ""
 echo "✗ Server failed to start within 120 seconds"
-echo "Check logs with: docker compose -f dockers/docker-compose.chinda-qwen3-0.6b.yml logs"
+echo "Check logs with: docker compose -f docker-compose.chinda-qwen3-0.6b.yml logs"
 exit 1
