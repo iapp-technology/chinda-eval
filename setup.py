@@ -16,9 +16,10 @@ VERSION_FILE = os.path.abspath('evalscope/version.py')
 
 
 def get_version():
+    version_dict = {}
     with open(VERSION_FILE, 'r', encoding='utf-8') as f:
-        exec(compile(f.read(), VERSION_FILE, 'exec'))
-    return locals()['__version__']
+        exec(compile(f.read(), VERSION_FILE, 'exec'), version_dict)
+    return version_dict['__version__']
 
 
 def parse_requirements(fname='requirements.txt', with_version=True):

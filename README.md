@@ -98,7 +98,6 @@ conda activate chinda-eval
 
 # Install dependencies
 pip install -e .
-pip install -r requirements.txt
 ```
 
 ### Install Additional Components

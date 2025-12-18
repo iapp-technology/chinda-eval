@@ -36,18 +36,24 @@ BENCHMARK_LIMITS["ifeval-th"]=500
 declare -A MODEL_PATHS
 MODEL_PATHS["Qwen-Qwen3-8B"]="/mnt/disk3/Qwen_Qwen3-8B"
 MODEL_PATHS["ThaiLLM-8B-SFT"]="/mnt/disk3/ThaiLLM_ThaiLLM-8B-SFT"
+MODEL_PATHS["typhoon-s-8b-instruct"]="/home/siamai/kunato_typhoon-s-8b-instruct-research-preview"
+MODEL_PATHS["THaLLE-0.2-ThaiLLM-8B"]="/home/siamai/KBTG-Labs_THaLLE-0.2-ThaiLLM-8B-fa-rc1"
 
 # Model docker image mapping (model_key -> docker_image)
 # Use pinned version for models that have issues with latest
 declare -A MODEL_IMAGES
 MODEL_IMAGES["Qwen-Qwen3-8B"]="vllm/vllm-openai:latest"
 MODEL_IMAGES["ThaiLLM-8B-SFT"]="vllm/vllm-openai:v0.9.2"
+MODEL_IMAGES["typhoon-s-8b-instruct"]="vllm/vllm-openai:v0.12.0"
+MODEL_IMAGES["THaLLE-0.2-ThaiLLM-8B"]="vllm/vllm-openai:v0.12.0"
 DEFAULT_VLLM_IMAGE="vllm/vllm-openai:latest"
 
 # Available models
 ALL_MODELS=(
-    "Qwen-Qwen3-8B"
-    "ThaiLLM-8B-SFT"
+    # "Qwen-Qwen3-8B"
+    # "ThaiLLM-8B-SFT"
+    "typhoon-s-8b-instruct"
+    "THaLLE-0.2-ThaiLLM-8B"
 )
 
 # Models to test (from arguments or all)
@@ -336,14 +342,14 @@ run_all_benchmarks_parallel() {
 # Main execution
 main() {
     print_message "=========================================="
-    print_message "Testing Base Models: Qwen3-8B and ThaiLLM-8B-SFT"
+    print_message "Testing Base Models"
     print_message "=========================================="
 
     # Ensure output directory exists
     mkdir -p "$BASE_OUTPUT_DIR"
 
     # Activate conda environment
-    source /home/saiuser/miniconda3/bin/activate ${CONDA_ENV}
+    source /home/siamai/miniconda3/bin/activate ${CONDA_ENV}
 
     for model_key in "${MODEL_ORDER[@]}"; do
         print_message "=========================================="
