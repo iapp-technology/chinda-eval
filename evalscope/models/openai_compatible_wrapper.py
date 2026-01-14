@@ -142,14 +142,10 @@ def wrap_openai_client(client):
     wrapper = RobustOpenAIClient(client)
 
     def wrapped_create(**kwargs):
-        # Check if this is a model known to have issues
-        model = kwargs.get('model', '')
-        if 'qwen3' in model.lower() or 'gpt-oss-120b' in model.lower():
-            # Use the robust wrapper for problematic models
-            return wrapper.chat_completions_create(**kwargs)
-        else:
-            # Use the original method for other models
-            return client.chat.completions._original_create(**kwargs)
+        # Apply robust wrapper to ALL models using remote APIs
+        # This ensures timeout errors and connection issues are handled gracefully
+        # for any OpenAI-compatible API endpoint
+        return wrapper.chat_completions_create(**kwargs)
 
     client.chat.completions.create = wrapped_create
     return client

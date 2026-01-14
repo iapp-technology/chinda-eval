@@ -278,6 +278,7 @@ run_benchmark() {
     print_info "[BENCHMARK: $benchmark] Starting for model: $model_name (limit: $sample_limit samples)..."
 
     # Run evalscope command
+    # --ignore-errors: Continue evaluation even if some samples fail (e.g., timeout)
     evalscope eval \
         --model $model_name \
         --api-url $VLLM_SERVER_URL \
@@ -287,6 +288,7 @@ run_benchmark() {
         --dataset-hub huggingface \
         --work-dir "$bench_output_dir" \
         --eval-batch-size $EVAL_BATCH_SIZE \
+        --ignore-errors \
         --generation-config '{"do_sample": false, "temperature": 0.0, "max_new_tokens": 32768}' \
         --timeout 300 \
         --limit $sample_limit > "$bench_output_dir/output.log" 2>&1
