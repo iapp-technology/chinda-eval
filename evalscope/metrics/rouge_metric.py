@@ -1,10 +1,11 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 
-import jieba
 from collections import defaultdict
 from rouge_chinese import Rouge
 from statistics import mean
 from tqdm import tqdm
+
+from pythainlp.tokenize import word_tokenize as thai_word_tokenize
 
 from evalscope.constants import MetricsConstant
 from evalscope.metrics.bundled_rouge_score import rouge_scorer
@@ -13,10 +14,25 @@ from evalscope.utils.logger import get_logger
 logger = get_logger()
 
 
-class DummyTokenizer:
+class ThaiTokenizer:
+    """Tokenizer for Thai text using pythainlp."""
 
     def tokenize(self, text: str):
-        return text.split()
+        """Tokenize text using pythainlp's word tokenizer.
+
+        This handles Thai text, English text, and mixed Thai+English text.
+        """
+        tokens = thai_word_tokenize(text, engine='newmm', keep_whitespace=False)
+        return tokens
+
+
+def is_contains_thai(text: str) -> bool:
+    """Check if text contains Thai characters."""
+    for char in text:
+        # Thai Unicode range: U+0E00 to U+0E7F
+        if '\u0e00' <= char <= '\u0e7f':
+            return True
+    return False
 
 
 def is_contains_chinese(strs):
@@ -45,15 +61,17 @@ def compute_rouge_score(predict_l, reference_l):
     return rlt
 
 
-def compute_rouge_score_one_sample_zh(predict, reference):
+def compute_rouge_score_one_sample_th(predict, reference):
+    """Compute ROUGE score using Thai tokenizer with rouge_chinese scorer."""
     result = dict()
-    zh_scorer = Rouge()
+    th_scorer = Rouge()
     for p, r in zip(predict, reference):
-        p = ' '.join(jieba.cut(p)) if is_contains_chinese(p) else p
-        r = ' '.join(jieba.cut(r)) if is_contains_chinese(r) else r
+        # Use Thai tokenizer for all text (Thai, English, or mixed)
+        p = ' '.join(thai_word_tokenize(p, engine='newmm', keep_whitespace=False))
+        r = ' '.join(thai_word_tokenize(r, engine='newmm', keep_whitespace=False))
 
         try:
-            score = zh_scorer.get_scores(p, r, ignore_empty=True)[0]
+            score = th_scorer.get_scores(p, r, ignore_empty=True)[0]
         except Exception as e:
             logger.warning(f'rouge score error: {p} {r} {e}')
             continue
@@ -72,7 +90,7 @@ def compute_rouge_score_one_sample_zh(predict, reference):
 
 def compute_rouge_score_one_sample(predict, reference):
     result = dict()
-    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], tokenizer=DummyTokenizer())
+    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], tokenizer=ThaiTokenizer())
     for p, r in zip(predict, reference):
         try:
             score = scorer.score(p, r)
