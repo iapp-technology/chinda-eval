@@ -207,18 +207,12 @@ def bleu_ngram_one_sample(predict: str, reference: str):
         }
 
     """
-    import jieba
-    from nltk import word_tokenize
+    from pythainlp.tokenize import word_tokenize as thai_word_tokenize
     from nltk.translate.bleu_score import sentence_bleu
 
-    def is_contains_chinese(strs):
-        for _char in strs:
-            if '\u4e00' <= _char <= '\u9fa5':
-                return True
-        return False
-
-    predict = list(jieba.cut(predict)) if is_contains_chinese(predict) else word_tokenize(predict)
-    reference = [list(jieba.cut(reference))] if is_contains_chinese(reference) else [word_tokenize(reference)]
+    # Use pythainlp for Thai/English/mixed text tokenization
+    predict = thai_word_tokenize(predict, engine='newmm', keep_whitespace=False)
+    reference = [thai_word_tokenize(reference, engine='newmm', keep_whitespace=False)]
 
     result = dict()
     result['bleu-1'] = sentence_bleu(reference, predict, weights=(1, 0, 0, 0))
