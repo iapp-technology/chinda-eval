@@ -61,8 +61,10 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
             # Use stdin template
             prompt = f"Generate an executable Python function generated from the given prompt. The function should take stdin as input and print the output. Simply call the function after the definition. {problem}"
         else:
-            # Use non-stdin template
-            prompt = f"Generate an executable Python function generated from the given prompt. Return the function body without invoking it at the final solution. {problem}"
+            # Use non-stdin template: inject starter_code so model knows class/method signature
+            starter_code = record.get('starter_code', '')
+            starter_block = f"\n\nComplete the following code:\n```python\n{starter_code}\n```" if starter_code else ""
+            prompt = f"Generate an executable Python function generated from the given prompt. Return the function body without invoking it at the final solution. {problem}{starter_block}"
 
         # Get test cases for validation
         public_tests = record.get('public_test_cases', [])
