@@ -185,20 +185,49 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
             try:
                 # Parse the code to find function definitions
                 tree = ast.parse(code)
-                func_names = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+                has_solution = any(
+                    isinstance(n, ast.ClassDef) and n.name == 'Solution'
+                    for n in ast.walk(tree)
+                )
 
-                if func_names:
-                    # Assume the main function is the first or last defined function
-                    main_func = func_names[-1]
-                    # Add code to call the function with test input
-                    if test_input:
-                        # Parse test input and format the function call
-                        full_code = f"{code}\n\n# Test execution\nimport sys\nsys.stdin = io.StringIO('''{test_input}''')\nimport io\nresult = {main_func}()\nif result is not None:\n    print(result)"
+                if has_solution:
+                    # LeetCode-style: locate the method inside class Solution,
+                    # instantiate the class, and call the method with test_input
+                    # parsed into real positional arguments (one per line) —
+                    # NOT redirected via stdin, which is never valid here.
+                    method_name = None
+                    for n in ast.walk(tree):
+                        if isinstance(n, ast.ClassDef) and n.name == 'Solution':
+                            for item in n.body:
+                                if isinstance(item, ast.FunctionDef) and item.name != '__init__':
+                                    method_name = item.name
+                                    break
+
+                    if method_name and test_input:
+                        args_str = ', '.join(
+                            line.strip() for line in test_input.strip().split('\n') if line.strip()
+                        )
+                        full_code = (
+                            "from typing import List, Dict, Tuple, Optional, Set\n"
+                            f"{code}\n\n"
+                            f"sol = Solution()\n"
+                            f"result = sol.{method_name}({args_str})\n"
+                            "if isinstance(result, bool):\n"
+                            "    print(str(result).lower())\n"
+                            "elif result is not None:\n"
+                            "    print(result)\n"
+                        )
                     else:
-                        full_code = f"{code}\n\n# Test execution\nresult = {main_func}()\nif result is not None:\n    print(result)"
+                        full_code = code
                 else:
-                    # No function found, try to run as is
-                    full_code = code
+                    func_names = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+                    if func_names:
+                        # Assume the main function is the first or last defined function
+                        main_func = func_names[-1]
+                        full_code = f"{code}\n\nresult = {main_func}()\nif result is not None:\n    print(result)"
+                    else:
+                        # No function found, try to run as is
+                        full_code = code
             except:
                 # If parsing fails, try to run as is
                 full_code = code
