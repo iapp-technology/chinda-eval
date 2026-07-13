@@ -60,6 +60,7 @@ def compute_rouge_score(predict_l, reference_l):
         rlt[rouge_key] = (mean(result[rouge_key]) * 100 if rouge_key in result else MetricsConstant.INVALID_VALUE)
     return rlt
 
+
 def compute_rouge_score_one_sample_zh(predict, reference):
     result = dict()
     zh_scorer = Rouge()
@@ -83,6 +84,7 @@ def compute_rouge_score_one_sample_zh(predict, reference):
         result['Rouge-L-F'] = score['rouge-l']['f']
 
     return result
+
 
 def compute_rouge_score_one_sample_th(predict, reference):
     """Compute ROUGE score using Thai tokenizer with rouge_chinese scorer."""
