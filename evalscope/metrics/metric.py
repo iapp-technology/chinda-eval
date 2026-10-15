@@ -42,8 +42,18 @@ class Accuracy(ExactMatch):
 
             results = []
             for prediction, reference in zip(predictions, references):
-                pred_answer = strip_answer_string(extract_answer(prediction))
                 ref_answer = strip_answer_string(reference)
+                # The prediction reaching a numeric metric is usually ALREADY
+                # the extracted answer (adapters extract before scoring).
+                # Re-running extract_answer on a bare symbolic answer like
+                # \frac{14}{3} falls through to the last-number regex ("3")
+                # and voids a correct answer. Try the direct comparison first;
+                # extraction remains as fallback, so this can only add credit.
+                direct = strip_answer_string(prediction)
+                if math_equal(direct, ref_answer):
+                    results.append(1.0)
+                    continue
+                pred_answer = strip_answer_string(extract_answer(prediction))
                 results.append(float(math_equal(pred_answer, ref_answer)))
 
             return results

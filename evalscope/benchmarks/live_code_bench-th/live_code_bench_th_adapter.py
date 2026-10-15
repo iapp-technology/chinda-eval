@@ -85,9 +85,24 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
                         return [parsed]
                     else:
                         return []
-                except:
-                    # If it's base64 encoded or corrupted, skip for now
-                    return []
+                except Exception:
+                    # LCB private tests ship base64+zlib+pickle encoded (same
+                    # as upstream LiveCodeBench; the English adapter decodes
+                    # them in live_code_bench/load_utils.py). Skipping them
+                    # scored problems against ~2.5 public sample tests only.
+                    try:
+                        import base64
+                        import pickle
+                        import zlib
+                        decoded = pickle.loads(zlib.decompress(base64.b64decode(test_cases_data.encode('utf-8'))))
+                        parsed = json.loads(decoded) if isinstance(decoded, str) else decoded
+                        if isinstance(parsed, list):
+                            return parsed
+                        elif isinstance(parsed, dict):
+                            return [parsed]
+                        return []
+                    except Exception:
+                        return []
             elif isinstance(test_cases_data, list):
                 return test_cases_data
             else:
@@ -161,9 +176,12 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
             if self.run_code_test(filtered_prediction, test_input, expected_output, requires_stdin):
                 passed_tests += 1
 
-        # Calculate Pass@1 score
-        pass_score = passed_tests / total_tests if total_tests > 0 else 0.0
-        score.value = {'Pass@1': pass_score}
+        # Official LiveCodeBench pass@1 is all-or-nothing per problem: a
+        # solution passes only if EVERY test passes. The previous
+        # passed/total fraction awarded partial credit no other LCB
+        # implementation gives, inflating scores vs published numbers.
+        pass_score = 1.0 if (total_tests > 0 and passed_tests == total_tests) else 0.0
+        score.value = {'Pass@1': pass_score, 'test_pass_fraction': (passed_tests / total_tests if total_tests else 0.0)}
 
         if self.debug:
             logger.info(f"Code evaluation: {passed_tests}/{total_tests} tests passed (Pass@1: {pass_score})")
@@ -251,16 +269,14 @@ class LiveCodeBenchThaiAdapter(DefaultDataAdapter):
             import os
             os.unlink(temp_file)
 
-            # Check if the output matches
+            # Check if the output matches. A multi-line expected output is ONE
+            # answer with several lines (standard competitive-programming
+            # format), not a menu of alternatives - the old any-line rule let
+            # a program that printed just one line of an N-line answer pass.
             actual_output = result.stdout.strip()
-
-            # Handle multiple possible correct outputs (separated by newlines in expected)
-            if '\n' in expected_output:
-                # Multiple acceptable outputs
-                acceptable_outputs = [out.strip() for out in expected_output.split('\n')]
-                return actual_output in acceptable_outputs
-            else:
-                return actual_output == expected_output
+            expected_norm = '\n'.join(line.strip() for line in expected_output.strip().splitlines())
+            actual_norm = '\n'.join(line.strip() for line in actual_output.splitlines())
+            return actual_norm == expected_norm
 
         except subprocess.TimeoutExpired:
             if self.debug:
