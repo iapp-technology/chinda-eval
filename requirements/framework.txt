@@ -9,6 +9,7 @@ matplotlib
 modelscope[framework]>=1.27
 nltk>=3.9
 openai
+oss2
 overrides
 pandas
 pillow
